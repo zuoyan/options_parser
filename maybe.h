@@ -13,9 +13,9 @@ namespace options_parser {
 
 struct not_used {};
 
-template <class A, class B = not_used>
-void show_type() {
-  static_assert(std::is_same<A, B>::value, "...");
+template <class ...A, class T=not_used>
+void show_type(T _=T()) {
+  static_assert(mpl::amount(std::is_same<A, T>::value...), "...");
 }
 
 struct Nothing {};

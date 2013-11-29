@@ -37,6 +37,15 @@ struct vector_t {
   static constexpr int size = sizeof...(T);
 };
 
+constexpr intmax_t amount() {
+  return 0;
+}
+
+template <class... T>
+constexpr intmax_t amount(intmax_t h, T... v) {
+  return h + amount(v...);
+}
+
 template <int First, int Step, int Last,
           bool Check = ((Last - First) * Step > 0)>
 struct vector_range_impl

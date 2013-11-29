@@ -68,10 +68,7 @@ struct Taker {
       auto v_s = func(pa);
       tr.end = v_s.second.position;
       tr.args = v_s.second.args;
-      tr.error = get_error(v_s.first);
-      if (!tr.error) {
-        tr.error = to_error(get_value(v_s.first));
-      }
+      tr.error = to_error(v_s.first);
       return tr;
     };
   }
@@ -84,11 +81,11 @@ struct Taker {
   Taker(const F &func) {
     take_ = [func, this](const MatchResult &mr) {
       TakeResult tr;
-      auto get_value = tuple_value_indices<
+      auto get_values = tuple_value_indices<
           typename mpl::function_traits<F>::parameters_type>(
           typename mpl::vector_range<mpl::function_traits<F>::nary>::type{});
       PositionArguments pa{mr.end, mr.args};
-      auto v_s = get_value.apply(check_invoke(void_wrap(func)))(pa);
+      auto v_s = get_values.apply(check_invoke(void_wrap(func)))(pa);
       tr.end = v_s.second.position;
       tr.args = v_s.second.args;
       tr.error = to_error(v_s.first);
@@ -110,7 +107,9 @@ struct Taker {
 
   template <class T>
   static Maybe<std::string> to_error(const Either<T> &ve) {
-    return get_error(ve);
+   auto e = get_error(ve);
+   if (e) return e;
+   return to_error(get_value(ve));
   }
 
   static Maybe<std::string> to_error(int c) {
