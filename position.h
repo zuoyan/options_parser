@@ -93,22 +93,24 @@ struct PositionArguments {
 
 template <class T = std::string, class Check = always_true>
 state<Either<T>, PositionArguments> value(Check check = Check()) {
-  return[check](const PositionArguments & s)
+  auto func = [check](const PositionArguments & s)
       ->std::pair<Either<T>, PositionArguments> {
-          if (!check(s)) {return std::make_pair(nothing, s);
-}
-auto r = get_arg(s.args, s.position);
-PositionArguments pa{r.end, s.args};
-if (!r.value) {
-  return std::make_pair(error_message("no arguments rest"), pa);
-}
-T val;
-auto ec = from_str(*r.value.get(), &val);
-if (ec) {
-  return std::make_pair(error_message(*ec.get()), pa);
-}
-return std::make_pair(val, pa);
-};
+    if (!check(s)) {
+      return std::make_pair(nothing, s);
+    }
+    auto r = get_arg(s.args, s.position);
+    PositionArguments pa{r.end, s.args};
+    if (!r.value) {
+      return std::make_pair(error_message("no arguments rest"), pa);
+    }
+    T val;
+    auto ec = from_str(*r.value.get(), &val);
+    if (ec) {
+      return std::make_pair(error_message(*ec.get()), pa);
+    }
+    return std::make_pair(val, pa);
+  };
+  return func;
 }
 
 struct opt_value_tag {
@@ -124,20 +126,20 @@ constexpr opt_value_tag opt_value{};
 template <class Check = always_true>
 state<Either<std::string>, PositionArguments> match_value(Check check =
                                                               Check()) {
-  return[check](const PositionArguments & s)
+  auto func = [check](const PositionArguments & s)
       ->std::pair<Either<std::string>, PositionArguments> {
-          if (!check(s)) {return std::make_pair(nothing, s);
-}
-auto r = get_match_arg(s.args, s.position);
-PositionArguments pa{r.end, s.args};
-if (r.value) {
-  return std::make_pair(*r.value.get(), pa);
-}
-return std::make_pair(error_message("no arguments rest"), pa);
-}
-;
-}
-;
+    if (!check(s)) {
+      return std::make_pair(nothing, s);
+    }
+    auto r = get_match_arg(s.args, s.position);
+    PositionArguments pa{r.end, s.args};
+    if (r.value) {
+      return std::make_pair(*r.value.get(), pa);
+    }
+    return std::make_pair(error_message("no arguments rest"), pa);
+  };
+  return func;
+};
 
 template <class T, int... I>
 auto tuple_value_indices(mpl::vector_c<I...>)
