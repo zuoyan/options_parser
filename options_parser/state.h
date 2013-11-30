@@ -177,7 +177,7 @@ auto gather(const States &... states)
 
 template <class H, class... States>
 auto gather(const H &h, const States &... states) OPTIONS_PARSER_AUTO_RETURN(
-    gather<typename H::result_type::second_type>(h, states...));
+    gather<typename state_state_type<H>::type>(h, states...));
 
 template <class V, class S>
 state<Either<std::vector<decltype(get_value(std::declval<V>()))>>, S> many(

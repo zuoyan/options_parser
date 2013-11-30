@@ -5,6 +5,7 @@
 
 #include "options_parser/maybe.h"
 #include "options_parser/property.h"
+#include "options_parser/converter.h"
 
 namespace options_parser {
 
