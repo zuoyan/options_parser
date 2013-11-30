@@ -189,14 +189,16 @@ struct Either {
   auto bind(Func &&func)
       const -> Either<decltype(func(std::declval<Value>())), Other> {
     if (other) return Error<Other>(*other.get());
-    return func(*this->value.get());
+    if (value) return func(*this->value.get());
+    return Error<Other>();
   }
 
   template <class Func>
   auto apply(Func &&func)
       const -> Either<decltype(void_wrap(func)(std::declval<Value>())), Other> {
     if (other) return Error<Other>(*other.get());
-    return void_wrap(func)(*this->value.get());
+    if (value) return void_wrap(func)(*this->value.get());
+    return Error<Other>();
   }
 
   template <class U>

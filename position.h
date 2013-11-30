@@ -96,7 +96,7 @@ state<Either<T>, PositionArguments> value(Check check = Check()) {
   auto func = [check](const PositionArguments & s)
       ->std::pair<Either<T>, PositionArguments> {
     if (!check(s)) {
-      return std::make_pair(nothing, s);
+      return std::make_pair(error_message("pre check failed"), s);
     }
     auto r = get_arg(s.args, s.position);
     PositionArguments pa{r.end, s.args};
@@ -112,16 +112,6 @@ state<Either<T>, PositionArguments> value(Check check = Check()) {
   };
   return func;
 }
-
-struct opt_value_tag {
-  bool operator()(const PositionArguments &s) const {
-    auto c = get_char(s.args, s.position);
-    if (!c.value) return false;
-    return *c.value.get() == '-';
-  }
-};
-
-constexpr opt_value_tag opt_value{};
 
 template <class Check = always_true>
 state<Either<std::string>, PositionArguments> match_value(Check check =
