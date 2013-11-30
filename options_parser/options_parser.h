@@ -5,13 +5,13 @@
 #include <memory>
 #include <set>
 
-#include "arguments.h"
-#include "document.h"
-#include "position.h"
-#include "matcher.h"
-#include "taker.h"
-#include "converter.h"
-#include "property.h"
+#include "options_parser/arguments.h"
+#include "options_parser/document.h"
+#include "options_parser/position.h"
+#include "options_parser/matcher.h"
+#include "options_parser/taker.h"
+#include "options_parser/converter.h"
+#include "options_parser/property.h"
 
 namespace options_parser {
 

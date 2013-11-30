@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "maybe.h"
-#include "property.h"
+#include "options_parser/maybe.h"
+#include "options_parser/property.h"
 
 namespace options_parser {
 

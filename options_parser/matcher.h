@@ -2,9 +2,9 @@
 #define FILE_E7F07257_683B_4FA3_B31F_CAF05225457F_H
 #include <functional>
 
-#include "maybe.h"
-#include "arguments.h"
-#include "position.h"
+#include "options_parser/maybe.h"
+#include "options_parser/arguments.h"
+#include "options_parser/position.h"
 
 namespace options_parser {
 typedef int Priority;
