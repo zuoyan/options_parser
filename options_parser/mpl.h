@@ -8,10 +8,22 @@ struct protect {
   typedef T type;
 };
 
+template <int V>
+struct value_c {
+  typedef value_c type;
+  static constexpr int value = V;
+};
+
 template <int... V>
 struct vector_c {
   typedef vector_c type;
   static constexpr int size = sizeof...(V);
+};
+
+template <class... T>
+struct vector_t {
+  typedef vector_t type;
+  static constexpr int size = sizeof...(T);
 };
 
 template <class A, class B>
@@ -29,12 +41,6 @@ struct rewrap;
 template <template <class...> class N, template <class...> class O, class... T>
 struct rewrap<N, O<T...>> {
   typedef N<T...> type;
-};
-
-template <class... T>
-struct vector_t {
-  typedef vector_t type;
-  static constexpr int size = sizeof...(T);
 };
 
 constexpr intmax_t amount() {
