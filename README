@@ -1,0 +1,26 @@
+options parser for C++0x
+=======================
+
+This's a C++0x library for parsing options/command line arguments. Every option
+is viewed as Match, Take, and Document. Generally, Match is a function from
+current state(Position and Arguments) to newer state and Priority without side
+effects. Take is a function from current state to newer state with side
+effects. Document is used to show help message, or parsing error.
+
+This library has simpified routines for general match and take, see
+options_parser_test.cc and apt.cc for usage examples.
+
+Consideration
+-------------
+
+Match can be any functions, not just string match, and Take can be any
+functions, not just assignments. I think, this approach is more flexible than
+gflags, and getopt.
+
+One of most used limits of options is order independent. But this library
+processing options in order and stopped at first not konwn/failed options.
+
+The most powerful design for options processing is using a real dynamic parser,
+or parser DSL library. User just defines whole the syntax with embeded
+actions. But this's a little hard to implement and even harder, i think, to make
+it easy to use.
