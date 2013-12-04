@@ -85,6 +85,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  if (!result.size()) {
+    std::cerr << "give me a command ..." << std::endl;
+    return 1;
+  }
+
   options_parser::many(options_parser::value().apply([&](std::string arg) {
     result.push_back(arg);
   }))({parse_result.position, parse_result.args});
