@@ -17,13 +17,13 @@ inline int ArgvArguments::char_at(int idx, int off) const {
   return argv_[idx][off];
 }
 
-inline std::string ArgvArguments::arg_at(int idx) const {
-  if (idx >= argc()) return std::string();
+inline string ArgvArguments::arg_at(int idx) const {
+  if (idx >= argc()) return string();
   return argv_[idx];
 }
 
 inline VectorStringArguments::VectorStringArguments(
-    const std::vector<std::string> &argv)
+    const std::vector<string> &argv)
     : argv_(argv) {}
 
 inline int VectorStringArguments::argc() const { return argv_.size(); }
@@ -34,14 +34,14 @@ inline int VectorStringArguments::char_at(int idx, int off) const {
   return argv_[idx][off];
 }
 
-inline std::string VectorStringArguments::arg_at(int idx) const {
-  if (idx >= argc()) return std::string();
+inline string VectorStringArguments::arg_at(int idx) const {
+  if (idx >= argc()) return string();
   return argv_[idx];
 }
 
 inline FunctionArguments::FunctionArguments(
     std::function<int()> argc, std::function<int(int, int)> char_at,
-    std::function<std::string(int)> arg_at)
+    std::function<string(int)> arg_at)
     : argc(argc), char_at_(char_at), arg_at_(arg_at) {}
 
 inline int FunctionArguments::char_at(int idx, int off) const {
@@ -52,10 +52,10 @@ inline int FunctionArguments::char_at(int idx, int off) const {
   return s.data()[off];
 }
 
-inline std::string FunctionArguments::arg_at(int idx) const {
+inline string FunctionArguments::arg_at(int idx) const {
   if (arg_at_) return arg_at_(idx);
   assert(char_at_);
-  std::string ret;
+  string ret;
   int off = 0;
   while (true) {
     int c = char_at(idx, off++);

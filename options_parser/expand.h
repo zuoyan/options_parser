@@ -11,8 +11,8 @@
 namespace options_parser {
 
 #ifndef OPTIONS_PARSER_NO_WORDEXP
-inline std::vector<std::string> wordexp(const std::string& input) {
-  std::vector<std::string> ret;
+inline std::vector<string> wordexp(const string& input) {
+  std::vector<string> ret;
   wordexp_t p;
   int r = wordexp(input.c_str(), &p, 0);
   if (r) return ret;
@@ -24,12 +24,12 @@ inline std::vector<std::string> wordexp(const std::string& input) {
 }
 #endif
 
-inline std::vector<std::string> split_space_separated(
-    const std::string& input) {
-  std::vector<std::string> ret;
+inline std::vector<string> split_space_separated(
+    const string& input) {
+  std::vector<string> ret;
   size_t off = 0;
   char quote = 0;
-  std::string word;
+  string word;
   bool pre_quote = false;
   while (off < input.size()) {
     char c = input[off];
@@ -101,7 +101,7 @@ inline std::vector<std::string> split_space_separated(
   return ret;
 }
 
-inline std::vector<std::string> expand(const std::string& input) {
+inline std::vector<string> expand(const string& input) {
 #ifndef OPTIONS_PARSER_NO_WORDEXP
   return wordexp(input);
 #endif

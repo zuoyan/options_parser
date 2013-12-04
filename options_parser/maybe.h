@@ -155,7 +155,7 @@ struct Maybe {
   }
 };
 
-template <class T = std::string>
+template <class T = string>
 struct Error {
   T message;
 
@@ -168,9 +168,9 @@ struct Error {
   operator T() const { return message; }
 };
 
-inline Error<> error_message(const std::string &m) { return Error<>(m); }
+inline Error<> error_message(const string &m) { return Error<>(m); }
 
-template <class Value, class Other = std::string>
+template <class Value, class Other = string>
 struct Either {
   Maybe<Value> value;
   Maybe<Other> other;
@@ -227,22 +227,22 @@ T get_value(const Either<T> &ve) {
 inline Nothing get_value(Nothing) { return nothing; }
 
 template <class T>
-Maybe<std::string> get_error(const T &v) {
+Maybe<string> get_error(const T &v) {
   return nothing;
 }
 
 template <class T>
-Maybe<std::string> get_error(const Maybe<T> &v) {
+Maybe<string> get_error(const Maybe<T> &v) {
   if (v) return nothing;
-  return std::string("empty");
+  return string("empty");
 }
 
 template <class T>
-Maybe<std::string> get_error(const Either<T> &ve) {
+Maybe<string> get_error(const Either<T> &ve) {
   return ve.other;
 }
 
-inline Maybe<std::string> get_error(Nothing) { return nothing; }
+inline Maybe<string> get_error(Nothing) { return nothing; }
 
 template <class F>
 struct invoker {
@@ -291,17 +291,17 @@ struct check_invoker {
         void_wrap(std::declval<F>())(get_value(std::declval<Args>())...)) type;
   };
 
-  Maybe<std::string> check_all() const { return nothing; }
+  Maybe<string> check_all() const { return nothing; }
 
   template <class H, class... R>
-  Maybe<std::string> check_all(const H &h, const R &... r) const {
+  Maybe<string> check_all(const H &h, const R &... r) const {
     auto e = get_error(h);
     if (e) return e;
     return check_all(r...);
   }
 
   template <class V, int... I>
-  Maybe<std::string> check_indices(const V &v, mpl::vector_c<I...>) const {
+  Maybe<string> check_indices(const V &v, mpl::vector_c<I...>) const {
     return check_all(std::get<I>(v)...);
   }
 

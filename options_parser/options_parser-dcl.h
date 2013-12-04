@@ -6,12 +6,12 @@
 #include <set>
 #include <fstream>
 
-#include "options_parser/arguments.h"
-#include "options_parser/document.h"
+#include "options_parser/arguments-dcl.h"
+#include "options_parser/document-dcl.h"
 #include "options_parser/position.h"
-#include "options_parser/matcher.h"
+#include "options_parser/matcher-dcl.h"
 #include "options_parser/taker.h"
-#include "options_parser/converter.h"
+#include "options_parser/converter-dcl.h"
 #include "options_parser/property.h"
 #include "options_parser/expand.h"
 
@@ -36,8 +36,8 @@ Taker bundle(const std::vector<Option> &options);
 struct ParseResult {
   Position position;
   Arguments args;
-  Maybe<std::string> error;
-  Maybe<std::string> error_full;
+  Maybe<string> error;
+  Maybe<string> error_full;
 };
 
 struct Parser {
@@ -54,17 +54,17 @@ struct Parser {
 
   ParseResult parse(const PositionArguments &s);
 
-  ParseResult parse_string(const std::string &a);
+  ParseResult parse_string(const string &a);
 
   template <class GetLine>
-  size_t parse_lines(const GetLine &get_line, Maybe<std::string> *error,
-                     Maybe<std::string> *error_full);
+  size_t parse_lines(const GetLine &get_line, Maybe<string> *error,
+                     Maybe<string> *error_full);
 
-  size_t parse_lines(const std::vector<std::string> &lines,
-                     Maybe<std::string> *error, Maybe<std::string> *error_full);
+  size_t parse_lines(const std::vector<string> &lines,
+                     Maybe<string> *error, Maybe<string> *error_full);
 
-  void parse_file(const std::string &fn, Maybe<std::string> *error,
-                  Maybe<std::string> *error_full);
+  void parse_file(const string &fn, Maybe<string> *error,
+                  Maybe<string> *error_full);
 
   void add_parser(const Parser &parser, int priority = 0);
 
@@ -76,7 +76,7 @@ struct Parser {
   Option *add_help(const CM &m = CM{"h|help"},
                    const CD &d = CD{"-h, --help", "show help message"});
 
-  std::string help_message(int level, int width);
+  string help_message(int level, int width);
 
  private:
   std::vector<Document> documents(int level);
@@ -88,9 +88,9 @@ struct Parser {
     bool active;
     int help_level;
     // description before options
-    property<std::string> description;
+    property<string> description;
     // information after options
-    property<std::string> information;
+    property<string> information;
     std::vector<std::shared_ptr<Option>> options;
     std::vector<std::pair<int, std::shared_ptr<Holder>>> parsers;
 
@@ -106,12 +106,12 @@ struct Parser {
 inline Parser &parser();
 
 template <class T>
-Option *define_flag(Parser &parser, const std::string &flag, T *ptr,
-                    const std::string &doc = "");
+Option *define_flag(Parser &parser, const string &flag, T *ptr,
+                    const string &doc = "");
 
 template <class T>
-Option *define_flag(const std::string &flag, T *ptr,
-                    const std::string &doc = "");
+Option *define_flag(const string &flag, T *ptr,
+                    const string &doc = "");
 
 #define OPTIONS_PARSER_FLAGS_DECLARE(TYPE, NAME) extern TYPE FLAGS_##NAME
 

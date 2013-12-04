@@ -8,7 +8,7 @@ namespace options_parser {
 struct TakeResult {
   Position end;
   Arguments args;
-  Maybe<std::string> error;
+  Maybe<string> error;
 };
 
 struct Taker {
@@ -95,34 +95,34 @@ struct Taker {
 
   TakeResult operator()(const MatchResult &mr) const { return take_(mr); }
 
-  static Maybe<std::string> to_error(Nothing) { return nothing; }
+  static Maybe<string> to_error(Nothing) { return nothing; }
 
-  static Maybe<std::string> to_error(void_) { return nothing; }
+  static Maybe<string> to_error(void_) { return nothing; }
 
   template <class T>
-  static Maybe<std::string> to_error(const Maybe<T> &v) {
-    if (!v) return std::string("empty result");
+  static Maybe<string> to_error(const Maybe<T> &v) {
+    if (!v) return string("empty result");
     return to_error(*v.get());
   }
 
   template <class T>
-  static Maybe<std::string> to_error(const Either<T> &ve) {
+  static Maybe<string> to_error(const Either<T> &ve) {
    auto e = get_error(ve);
    if (e) return e;
    return to_error(get_value(ve));
   }
 
-  static Maybe<std::string> to_error(int c) {
+  static Maybe<string> to_error(int c) {
     if (c > 0) return nothing;
     return "error code: " + std::to_string(c);
   }
 
-  static Maybe<std::string> to_error(bool f) {
+  static Maybe<string> to_error(bool f) {
     if (f) return nothing;
-    return std::string("failed");
+    return string("failed");
   }
 
-  static Maybe<std::string> to_error(const std::string &e) {
+  static Maybe<string> to_error(const string &e) {
     if (!e.size()) return nothing;
     return e;
   }

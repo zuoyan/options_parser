@@ -1,5 +1,10 @@
 #ifndef FILE_E9EBEEAA_F30F_4CB9_8065_201506C55FA4_H
 #define FILE_E9EBEEAA_F30F_4CB9_8065_201506C55FA4_H
+#include "options_parser/arguments-inc.h"
+#include "options_parser/document-inc.h"
+#include "options_parser/converter-inc.h"
+#include "options_parser/matcher-inc.h"
+
 namespace options_parser {
 
 template <class Description, class Information>
@@ -10,8 +15,8 @@ Parser::Parser(const Description &description, const Information &information) {
 }
 
 template <class GetLine>
-size_t Parser::parse_lines(const GetLine &get_line, Maybe<std::string> *error,
-                           Maybe<std::string> *error_full) {
+size_t Parser::parse_lines(const GetLine &get_line, Maybe<string> *error,
+                           Maybe<string> *error_full) {
   size_t off = 0;
   while (true) {
     auto maybe_line = get_line();
@@ -58,8 +63,8 @@ Option *Parser::add_help(const CM &m, const CD &d) {
 }
 
 template <class T>
-Option *define_flag(Parser &parser, const std::string &flag, T *ptr,
-                    const std::string &doc) {
+Option *define_flag(Parser &parser, const string &flag, T *ptr,
+                    const string &doc) {
   return parser.add_option(
       flag, ptr,
       {"--" + flag + "<arg>", "Current value: " + delay_to_str(ptr) +
@@ -67,7 +72,7 @@ Option *define_flag(Parser &parser, const std::string &flag, T *ptr,
 }
 
 template <class T>
-Option *define_flag(const std::string &flag, T *ptr, const std::string &doc) {
+Option *define_flag(const string &flag, T *ptr, const string &doc) {
   return define_flag(parser(), flag, ptr, doc);
 }
 

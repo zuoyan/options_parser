@@ -44,10 +44,10 @@ inline PositionValue<char> get_char(const Arguments &args,
   return PositionValue<char>(nothing, pos, pos);
 }
 
-inline PositionValue<std::string> get_arg(const Arguments &args,
+inline PositionValue<string> get_arg(const Arguments &args,
                                           const Position &pos) {
   if (pos.index >= args.argc()) {
-    return PositionValue<std::string>(nothing, pos, pos);
+    return PositionValue<string>(nothing, pos, pos);
   }
   auto s = args.arg_at(pos.index);
   if (s.size() >= (size_t)pos.off)
@@ -55,28 +55,28 @@ inline PositionValue<std::string> get_arg(const Arguments &args,
   else
     s = "";
   Position end{pos.index + 1, 0};
-  return PositionValue<std::string>(s, pos, end);
+  return PositionValue<string>(s, pos, end);
 }
 
-inline PositionValue<std::string> get_match_arg(const Arguments &args,
+inline PositionValue<string> get_match_arg(const Arguments &args,
                                                 const Position &pos,
                                                 const char prefix = '-') {
   Position arg_pos{pos.index, 0};
   auto r = get_arg(args, arg_pos);
   if (!r.value || !r.value.get()->size() || r.value.get()->at(0) != prefix) {
-    return PositionValue<std::string>(nothing, pos, pos);
+    return PositionValue<string>(nothing, pos, pos);
   }
   if ((int)r.value.get()->size() <= pos.off) {
-    return PositionValue<std::string>(nothing, pos, pos);
+    return PositionValue<string>(nothing, pos, pos);
   }
   int off = pos.off;
   if (off == 0) {
-    std::string *p = r.value.mutable_get();
+    string *p = r.value.mutable_get();
     while (off < (int)p->size() && p->at(off) == prefix) off++;
     *p = p->substr(off);
   } else {
     r.start = pos;
-    std::string *p = r.value.mutable_get();
+    string *p = r.value.mutable_get();
     *p = p->substr(off);
   }
   auto eq = r.value.get()->find('=');
@@ -93,7 +93,7 @@ struct PositionArguments {
   Arguments args;
 };
 
-template <class T = std::string, class Check = always_true>
+template <class T = string, class Check = always_true>
 state<Either<T>, PositionArguments> value(Check check = Check()) {
   auto func = [check](const PositionArguments & s)
       ->std::pair<Either<T>, PositionArguments> {
@@ -116,10 +116,10 @@ state<Either<T>, PositionArguments> value(Check check = Check()) {
 }
 
 template <class Check = always_true>
-state<Either<std::string>, PositionArguments> match_value(Check check =
+state<Either<string>, PositionArguments> match_value(Check check =
                                                               Check()) {
   auto func = [check](const PositionArguments & s)
-      ->std::pair<Either<std::string>, PositionArguments> {
+      ->std::pair<Either<string>, PositionArguments> {
     if (!check(s)) {
       return std::make_pair(nothing, s);
     }

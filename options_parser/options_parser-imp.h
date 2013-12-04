@@ -1,5 +1,10 @@
 #ifndef FILE_BE44E7FB_480D_4869_A5D8_0EA9C352CB97_H
 #define FILE_BE44E7FB_480D_4869_A5D8_0EA9C352CB97_H
+#include "options_parser/arguments-imp.h"
+#include "options_parser/document-imp.h"
+#include "options_parser/converter-imp.h"
+#include "options_parser/matcher-imp.h"
+
 namespace options_parser {
 
 inline Option::Option() {
@@ -70,7 +75,7 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
   while (c.position.index < c.args.argc()) {
     auto mr_opts = match_results(c);
     auto show_position = [](PositionArguments pa, size_t limit = 80) {
-      std::string ret = to_str(pa.position.index);
+      string ret = to_str(pa.position.index);
       if (pa.position.off) {
         ret += "off=" + to_str(pa.position.off) + ", ";
       }
@@ -95,7 +100,7 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
       pr.position = c.position;
       pr.args = c.args;
       pr.error = "match-none";
-      pr.error_full = std::string("match nothing at ") + show_position(c);
+      pr.error_full = string("match nothing at ") + show_position(c);
       return pr;
     }
     Priority max_pri = std::numeric_limits<Priority>::min();
@@ -112,7 +117,7 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
     if (last - mr_opts.begin() >= 2) {
       pr.position = c.position;
       pr.args = c.args;
-      std::vector<std::string> lines;
+      std::vector<string> lines;
       for (auto it = mr_opts.begin(); it != last; ++it) {
         auto &doc = it->second->document;
         auto ls = doc.format(78);
@@ -120,9 +125,8 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
         lines.insert(lines.end(), ls.begin(), ls.end());
       }
       pr.error = "match-multiple";
-      pr.error_full = std::string("match multiple at ") + show_position(c) +
-                      " with following options:\n" +
-                      Document::join(lines, '\n');
+      pr.error_full = string("match multiple at ") + show_position(c) +
+                      " with following options:\n" + join(lines, '\n');
       return pr;
     }
     auto const &mr_opt = mr_opts.front();
@@ -137,9 +141,9 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
       pr.position = c.position;
       pr.args = c.args;
       pr.error = "take-error";
-      pr.error_full = std::string("process failed: ") + *tr.error.get() + "\n" +
+      pr.error_full = string("process failed: ") + *tr.error.get() + "\n" +
                       "at " + show_position(c) + "\n" + "matched option:\n" +
-                      Document::join(mr_opt.second->document.format(78), '\n');
+                      join(mr_opt.second->document.format(78), '\n');
       return pr;
     }
     c.position = tr.end;
@@ -150,33 +154,33 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
   return pr;
 }
 
-inline ParseResult Parser::parse_string(const std::string &a) {
+inline ParseResult Parser::parse_string(const string &a) {
   VectorStringArguments args(expand(a));
   return parse({{0, 0}, args});
 }
 
-inline size_t Parser::parse_lines(const std::vector<std::string> &lines,
-                                  Maybe<std::string> *error,
-                                  Maybe<std::string> *error_full) {
+inline size_t Parser::parse_lines(const std::vector<string> &lines,
+                                  Maybe<string> *error,
+                                  Maybe<string> *error_full) {
   size_t off = 0;
-  return parse_lines([&]()->Maybe<std::string> {
+  return parse_lines([&]()->Maybe<string> {
                        if (off < lines.size()) return lines[off++];
                        return nothing;
                      },
                      error, error_full);
 }
 
-inline void Parser::parse_file(const std::string &fn, Maybe<std::string> *error,
-                               Maybe<std::string> *error_full) {
+inline void Parser::parse_file(const string &fn, Maybe<string> *error,
+                               Maybe<string> *error_full) {
   std::ifstream ifs(fn);
   if (!ifs.good()) {
     *error = "open-failed";
     *error_full = "open file '" + fn + "' to read failed";
     return;
   }
-  auto get_line = [&]()->Maybe<std::string> {
+  auto get_line = [&]()->Maybe<string> {
     if (!ifs.good()) return nothing;
-    std::string l;
+    string l;
     std::getline(ifs, l);
     return l;
   };
@@ -216,14 +220,14 @@ inline Option *Parser::add_option(const Matcher &m, const Taker &t,
   return add_option(opt);
 }
 
-inline std::string Parser::help_message(int level, int width) {
+inline string Parser::help_message(int level, int width) {
   auto docs = documents(level);
-  std::vector<std::string> lines;
+  std::vector<string> lines;
   for (const auto &doc : docs) {
     auto ls = doc.format(width);
     lines.insert(lines.end(), ls.begin(), ls.end());
   }
-  return Document::join(lines, '\n');
+  return join(lines, '\n');
 }
 
 inline std::vector<Document> Parser::documents(int level) {

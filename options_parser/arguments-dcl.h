@@ -5,6 +5,8 @@
 #include <vector>
 #include <functional>
 
+#include "options_parser/string.h"
+
 namespace options_parser {
 
 struct Arguments {
@@ -21,7 +23,7 @@ struct Arguments {
   struct Interface {
     virtual int argc() const = 0;
     virtual int char_at(int idx, int off) const = 0;
-    virtual std::string arg_at(int idx) const = 0;
+    virtual string arg_at(int idx) const = 0;
   };
 
   template <class T>
@@ -34,7 +36,7 @@ struct Arguments {
       return inst_.char_at(idx, off);
     }
 
-    virtual std::string arg_at(int idx) const { return inst_.arg_at(idx); }
+    virtual string arg_at(int idx) const { return inst_.arg_at(idx); }
 
     T inst_;
   };
@@ -43,7 +45,7 @@ struct Arguments {
 
   int char_at(int idx, int off) const { return inst_->char_at(idx, off); }
 
-  std::string arg_at(int idx) const { return inst_->arg_at(idx); }
+  string arg_at(int idx) const { return inst_->arg_at(idx); }
 
  private:
   std::shared_ptr<Interface> inst_;
@@ -54,35 +56,35 @@ struct ArgvArguments {
 
   int argc() const;
   int char_at(int idx, int off) const;
-  std::string arg_at(int idx) const;
+  string arg_at(int idx) const;
 
   int argc_;
   char **argv_;
 };
 
 struct VectorStringArguments {
-  VectorStringArguments(const std::vector<std::string> &argv);
+  VectorStringArguments(const std::vector<string> &argv);
 
   int argc() const;
 
   int char_at(int idx, int off) const;
-  std::string arg_at(int idx) const;
+  string arg_at(int idx) const;
 
-  std::vector<std::string> argv_;
+  std::vector<string> argv_;
 };
 
 struct FunctionArguments {
   FunctionArguments(std::function<int()> argc,
                     std::function<int(int, int)> char_at,
-                    std::function<std::string(int)> arg_at =
-                        std::function<std::string(int)>{});
+                    std::function<string(int)> arg_at =
+                        std::function<string(int)>{});
 
   std::function<int()> argc;
   std::function<int(int, int)> char_at_;
-  std::function<std::string(int)> arg_at_;
+  std::function<string(int)> arg_at_;
 
   int char_at(int idx, int off) const;
-  std::string arg_at(int idx) const;
+  string arg_at(int idx) const;
 };
 
 }  // namespace options_parser

@@ -127,14 +127,14 @@ struct gather_tuple_impl {
   template <int I, int N, class States, class Values,
             typename std::enable_if<(I == N), int>::type = 0>
   static S gather_tuple_h(const States &states, Values &values, const S &s,
-                          Maybe<std::string> &error) {
+                          Maybe<string> &error) {
     return s;
   }
 
   template <int I, int N, class States, class Values,
             typename std::enable_if<(I < N), int>::type = 0>
   static S gather_tuple_h(const States &states, Values &values, const S &s,
-                          Maybe<std::string> &error) {
+                          Maybe<string> &error) {
     auto v_s = std::get<I>(states)(s);
     error = get_error(v_s.first);
     if (error) return v_s.second;
@@ -150,7 +150,7 @@ struct gather_tuple_impl {
           ->std::pair<Either<typename gather_value_type<States...>::type>, S> {
         typename gather_value_type<States...>::type value;
         gather_tuple_impl self;
-        Maybe<std::string> error;
+        Maybe<string> error;
         auto ns =
         self.gather_tuple_h<0, sizeof...(States)>(states, value, s, error);
         if (error) {
@@ -190,7 +190,7 @@ state<Either<std::vector<decltype(get_value(std::declval<V>()))>>, S> many(
     std::vector<decltype(get_value(std::declval<V>()))> vs;
     auto saved = s;
     auto ns = s;
-    Maybe<std::string> error;
+    Maybe<string> error;
     while (vs.size() < max) {
       auto v_s = one(ns);
       error = get_error(v_s.first);
