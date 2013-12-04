@@ -25,11 +25,11 @@ struct state {
 
   state() = default;
   state(const state&) = default;
-  state(state&&) = default;
+  // state(state&&) = default;
 
   state &operator=(const state &) = default;
-  state &operator=(state &) = default;
-  state &operator=(state &&) = default;
+  // state &operator=(state &) = default;
+  // state &operator=(state &&) = default;
 
   template <class F,
             typename std::enable_if<
