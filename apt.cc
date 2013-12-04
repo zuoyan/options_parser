@@ -12,9 +12,10 @@ int main(int argc, char *argv[]) {
 
   cli.add_option("print-args", [&]() { print_args = true; }, {});
 
-  options_parser::Parser get_cli("apt-get Commands:", "");
+  options_parser::Parser get_cli("apt-get Commands:", "\n");
   cli.add_parser(get_cli);
 
+  std::string result_command;
   std::vector<std::string> result;
 
   std::vector<std::pair<std::string, std::string>> get_commands{
@@ -37,14 +38,54 @@ int main(int argc, char *argv[]) {
   for (auto c_h : get_commands) {
     auto c = c_h.first;
     get_cli.add_option({c, {}, {}, options_parser::value()}, [&, c]() {
-                         result.push_back("apt-get");
+                         result_command = "apt-get";
                          result.push_back(c);
                          cli.toggle();
                                                              },
                        {c, c_h.second});
   }
 
-  options_parser::Parser cache_cli("apt-cache Commands:", "");
+  get_cli.add_option("q", [&]() {
+      result.push_back("-q");
+    }, {"-q", "Loggable output - no progress indicator"});
+
+  get_cli.add_option("qq", [&]() {
+      result.push_back("-qq");
+    }, {"-qq", "No output except for errors"});
+
+  get_cli.add_option("d", [&]() {
+      result.push_back("-d");
+    }, {"-d", "Download only - do NOT install or unpack archives"});
+
+  get_cli.add_option("s", [&]() {
+      result.push_back("-s");
+    }, {"-s", "No-act. Perform ordering simulation"});
+
+  get_cli.add_option("y", [&]() {
+      result.push_back("-y");
+    }, {"-y", "Assume Yes to all queries and do not prompt"});
+
+  get_cli.add_option("f", [&]() {
+      result.push_back("-f");
+    }, {"-f", "Attempt to correct a system with broken dependencies in place"});
+
+  get_cli.add_option("m", [&]() {
+      result.push_back("-m");
+    }, {"-m", "Attempt to continue if archives are unlocatable"});
+
+  get_cli.add_option("u", [&]() {
+      result.push_back("-u");
+    }, {"-u", "Show a list of upgraded packages as well"});
+
+  get_cli.add_option("b", [&]() {
+      result.push_back("-b");
+    }, {"-b", "Build the source package after fetching it"});
+
+  get_cli.add_option("V", [&]() {
+      result.push_back("-V");
+    }, {"-V", "Show verbose version numbers"});
+
+  options_parser::Parser cache_cli("apt-cache Commands:", "\n");
   cli.add_parser(cache_cli);
 
   std::vector<std::pair<std::string, std::string>> cache_commands{
@@ -66,18 +107,47 @@ int main(int argc, char *argv[]) {
 
   for (auto c_h : cache_commands) {
     auto c = c_h.first;
-    cache_cli.add_option({c, {}, {}, options_parser::value()}, [&, c]() {
-                     result.push_back("apt-cache");
-                     result.push_back(c);
-                     cli.toggle();
-                                                               },
+    cache_cli.add_option({c, {}, {}, options_parser::value()},
+                         [&, c]() {
+                           result_command = "apt-cache";
+                           result.push_back(c);
+                           cli.toggle();
+                         },
                          {c, c_h.second});
   }
 
+  cache_cli.add_option("p", [&](std::string a) {
+      result.push_back("-p");
+      result.push_back(a);
+    }, {"-p=?", "The package cache."});
+
+  cache_cli.add_option("s", [&](std::string a) {
+      result.push_back("-s");
+      result.push_back(a);
+    }, {"-s=?", "The source cache."});
+
+  cache_cli.add_option("q", [&]() {
+      result.push_back("-q");
+    }, {"-q", "Disable progress indicator."});
+
+  cache_cli.add_option("i", [&]() {
+      result.push_back("-i");
+    }, {"-i", "Show only important deps for the unmet command."});
+
+  cli.add_option("c", [&](std::string a) {
+      result.push_back("-c");
+      result.push_back(a);
+    }, {"-c=?", "Read this configuration file."});
+
+  cli.add_option("o", [&](std::string a) {
+      result.push_back("-o");
+      result.push_back(a);
+    }, {"-o=?", "Set an arbitrary configuration option, eg -o dir::cache=/tmp"});
+
   options_parser::ArgcArgvArguments arguments(argc, argv);
   auto parse_result = cli.parse({{1, 0}, &arguments});
-  if (parse_result.error &&
-      (!result.size() || *parse_result.error.get() != "match-none")) {
+
+  if (parse_result.error && *parse_result.error.get() != "match-none") {
     std::cerr << *parse_result.error.get() << std::endl;
     if (parse_result.error_full) {
       std::cerr << *parse_result.error_full.get() << std::endl;
@@ -85,7 +155,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if (!result.size()) {
+  if (!result_command.size()) {
     std::cerr << "give me a command ..." << std::endl;
     return 1;
   }
@@ -102,6 +172,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::vector<const char*> result_argv;
+  result_argv.push_back(result_command.c_str());
   for (const auto & a : result) {
     result_argv.push_back(a.c_str());
   }
