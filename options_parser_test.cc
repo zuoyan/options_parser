@@ -20,6 +20,13 @@ int main(int argc, char *argv[]) {
                  "\n",
              "This's options parse following a state monad design.\n");
 
+  app.add_option("config-file", [&](const std::string &fn) {
+      options_parser::Maybe<std::string> error, error_full;
+      app.parse_file(fn, &error, &error_full);
+      return error_full ? *error_full.get() : "";
+                                },
+                 {"--config-file FILE", "parse options from FILE"});
+
   Parser sub("\nsub command and options\n",
              "Using -- to toggle sub option off.\n\n");
 

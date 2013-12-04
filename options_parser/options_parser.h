@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <set>
+#include <fstream>
 
 #include "options_parser/arguments.h"
 #include "options_parser/document.h"
@@ -12,6 +13,7 @@
 #include "options_parser/taker.h"
 #include "options_parser/converter.h"
 #include "options_parser/property.h"
+#include "options_parser/expand.h"
 
 namespace options_parser {
 
@@ -191,6 +193,86 @@ struct Parser {
     pr.position = c.position;
     pr.args = c.args;
     return pr;
+  }
+
+  ParseResult parse_string(const std::string &a) {
+    auto argv = expand(a);
+    VectorArgvArguments args(&argv);
+    return parse({{0, 0}, &args});
+  }
+
+  template <class GetLine>
+  size_t parse_lines(const GetLine& get_line,
+                     Maybe<std::string> *error,
+                     Maybe<std::string> *error_full) {
+    size_t off = 0;
+    while (true) {
+      auto maybe_line = get_line();
+      if (!maybe_line) break;
+      auto l = *maybe_line.get();
+      if (!l.size() || l[0] == '#') {
+        off += 1;
+        continue;
+      }
+      size_t start = off++;
+      if (l.back() == '\\') {
+        l = l.substr(0, l.size() - 1);
+        while (true) {
+          auto ml = get_line();
+          if (!ml) break;
+          auto n = *ml.get();
+          if (!n.size()) break;
+          if (n.back() != '\\') {
+            l += n;
+            break;
+          }
+          l += n.substr(0, n.size() - 1);
+        }
+      }
+      auto pr = parse_string(l);
+      if (pr.error) {
+        *error = pr.error;
+        *error_full = pr.error_full;
+        return start;
+      }
+    }
+    return off;
+  }
+
+  size_t parse_lines(const std::vector<std::string> &lines,
+                     Maybe<std::string> *error,
+                     Maybe<std::string> *error_full) {
+    size_t off = 0;
+    return parse_lines([&]()->Maybe<std::string> {
+                         if (off < lines.size()) return lines[off++];
+                         return nothing;
+                       },
+                       error, error_full);
+  }
+
+  void parse_file(const std::string &fn, Maybe<std::string> *error,
+                  Maybe<std::string> *error_full) {
+    std::ifstream ifs(fn);
+    if (!ifs.good()) {
+      *error = "open-failed";
+      *error_full = "open file '" + fn + "' to read failed";
+      return;
+    }
+    auto get_line = [&]() -> Maybe<std::string> {
+      if (!ifs.good()) return nothing;
+      std::string l;
+      std::getline(ifs, l);
+      return l;
+    };
+    size_t off = parse_lines(get_line, error, error_full);
+    if (*error) {
+      auto p = "parse file '" + fn + "' failed at line " + to_str(off);
+      if (*error_full) {
+        *error_full = p + " " + *error_full->get();
+      } else {
+        *error_full = p;
+      }
+    }
   }
 
   void add_parser(const Parser &parser, Priority priority = 0) {
