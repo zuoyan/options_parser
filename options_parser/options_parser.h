@@ -275,7 +275,7 @@ struct Parser {
     }
   }
 
-  void add_parser(const Parser &parser, Priority priority = 0) {
+  void add_parser(const Parser &parser, int priority = 0) {
     if (!holder_) {
       holder_ = std::make_shared<Holder>();
     }

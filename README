@@ -11,7 +11,7 @@ This library has simpified routines for general match and take, see
 options_parser_test.cc and apt.cc for usage examples.
 
 Consideration
--------------
+--------------
 
 Match can be any functions, not just string match, and Take can be any
 functions, not just assignments. I think, this approach is more flexible than
