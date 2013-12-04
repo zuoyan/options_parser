@@ -53,7 +53,7 @@ struct from_str_impl {
   }
 };
 
-Maybe<std::string> from_str(const std::string &s, std::string *p) {
+inline Maybe<std::string> from_str(const std::string &s, std::string *p) {
   *p = s;
   return nothing;
 }
@@ -77,7 +77,7 @@ std::string to_str(const T &v) {
   return to_str_impl<T>::to_str(v);
 }
 
-std::string to_str(const std::string &v) { return v; }
+inline std::string to_str(const std::string &v) { return v; }
 
 }  // namespace options_parser
 #endif  // FILE_C7E3D7AA_507A_4DB8_9B44_120AB8347570_H

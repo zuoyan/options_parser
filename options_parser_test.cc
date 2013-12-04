@@ -5,13 +5,7 @@
 
 using namespace options_parser;
 
-template <class T>
-void define_flag(Parser &parser, const std::string &flag, T *ptr,
-                 const std::string &doc = "") {
-  parser.add_option(flag, ptr, {"--" + flag + "<arg>",
-                                "Current value: " + delay_to_str(ptr) +
-                                    (doc.size() ? "\n" + doc : "Set " + flag)});
-}
+OPTIONS_PARSER_FLAGS_DEFINE(int, flag_int, 0, "A flag of int type");
 
 int main(int argc, char *argv[]) {
   Parser app(std::string("Test options parser.\n") + "Usage: " + argv[0] +
@@ -19,6 +13,7 @@ int main(int argc, char *argv[]) {
                  "       sub [<sub options>] [--]\n"
                  "\n",
              "This's options parse following a state monad design.\n");
+  app.add_parser(options_parser::parser());
 
   app.add_option("config-file", [&](const std::string &fn) {
       options_parser::Maybe<std::string> error, error_full;
@@ -61,11 +56,9 @@ int main(int argc, char *argv[]) {
 
   app.add_help();
 
-  // app.add_option("int", &int_value,
-  //                {"--int <int>", "Current: " + delay_to_str(&int_value) +
-  //                                    "\nSet integer value."});
-  define_flag(app, "int_value|int-value", &int_value,
-              "Set integer value int_value");
+  app.add_option("int", &int_value,
+                 {"--int <int>", "Current: " + delay_to_str(&int_value) +
+                                     "\nSet integer value."});
 
   app.add_option(
       "no-flag|flag|flag-on|flag-off",
@@ -134,4 +127,5 @@ int main(int argc, char *argv[]) {
 
   std::cerr << "int_value " << int_value << std::endl;
   std::cerr << "flag " << flag << std::endl;
+  std::cerr << "flag_int " << FLAGS_flag_int << std::endl;
 }

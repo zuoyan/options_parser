@@ -168,7 +168,7 @@ struct Error {
   operator T() const { return message; }
 };
 
-Error<> error_message(const std::string &m) { return Error<>(m); }
+inline Error<> error_message(const std::string &m) { return Error<>(m); }
 
 template <class Value, class Other = std::string>
 struct Either {
@@ -224,7 +224,7 @@ T get_value(const Either<T> &ve) {
   return *ve.value.get();
 }
 
-Nothing get_value(Nothing) { return nothing; }
+inline Nothing get_value(Nothing) { return nothing; }
 
 template <class T>
 Maybe<std::string> get_error(const T &v) {
@@ -242,7 +242,7 @@ Maybe<std::string> get_error(const Either<T> &ve) {
   return ve.other;
 }
 
-Maybe<std::string> get_error(Nothing) { return nothing; }
+inline Maybe<std::string> get_error(Nothing) { return nothing; }
 
 template <class F>
 struct invoker {

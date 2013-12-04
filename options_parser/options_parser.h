@@ -40,7 +40,7 @@ struct Option {
   }
 };
 
-Taker bundle(const std::vector<Option> &options) {
+inline Taker bundle(const std::vector<Option> &options) {
   return [options](const MatchResult &mr) {
     TakeResult tr;
     PositionArguments pa{mr.start, mr.args};
@@ -428,6 +428,39 @@ struct Parser {
   };
   std::shared_ptr<Holder> holder_;
 };
+
+// A default global parser, to hold options across libraries/objects.
+inline Parser& parser() {
+  static Parser p;
+  return p;
+}
+
+template <class T>
+Option* define_flag(Parser &parser, const std::string &flag, T *ptr,
+                 const std::string &doc = "") {
+  return parser.add_option(
+      flag, ptr,
+      {"--" + flag + "<arg>", "Current value: " + delay_to_str(ptr) +
+                                  (doc.size() ? "\n" + doc : "Set " + flag)});
+}
+
+template <class T>
+Option *define_flag(const std::string &flag, T *ptr,
+                    const std::string &doc = "") {
+  return define_flag(parser(), flag, ptr, doc);
+}
+
+#define OPTIONS_PARSER_FLAGS_DECLARE(TYPE, NAME) extern TYPE FLAGS_##NAME
+
+#define OPTIONS_PARSER_FLAGS_DEFINE(TYPE, NAME, VALUE, DOC)                  \
+  TYPE FLAGS_##NAME = VALUE;                                                 \
+  options_parser::Option *FLAGS_OPTIONS__##NAME =                            \
+      options_parser::parser().add_option("--" #NAME, &FLAGS_##NAME,         \
+                                          {"--" #NAME "=<" #TYPE ">",        \
+                                           "Current value: " +               \
+                                               options_parser::delay_to_str( \
+                                                   &FLAGS_##NAME) +          \
+                                               "\n" + DOC})
 
 }  // namespace options_parser
 #endif  // FILE_02522C8F_5040_40F1_ACBE_AEFC05B4514B_H

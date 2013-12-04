@@ -34,7 +34,8 @@ struct PositionValue {
           value.bind(func), start, end));
 };
 
-PositionValue<char> get_char(const Arguments *args, const Position &pos) {
+inline PositionValue<char> get_char(const Arguments *args,
+                                    const Position &pos) {
   int c = args->char_at(pos.index, pos.off);
   if (c != -1) {
     Position end{pos.index, pos.off + 1};
@@ -43,7 +44,8 @@ PositionValue<char> get_char(const Arguments *args, const Position &pos) {
   return PositionValue<char>(nothing, pos, pos);
 }
 
-PositionValue<std::string> get_arg(const Arguments *args, const Position &pos) {
+inline PositionValue<std::string> get_arg(const Arguments *args,
+                                          const Position &pos) {
   if (pos.index >= args->argc()) {
     return PositionValue<std::string>(nothing, pos, pos);
   }
@@ -56,9 +58,9 @@ PositionValue<std::string> get_arg(const Arguments *args, const Position &pos) {
   return PositionValue<std::string>(s, pos, end);
 }
 
-PositionValue<std::string> get_match_arg(const Arguments *args,
-                                         const Position &pos,
-                                         const char prefix = '-') {
+inline PositionValue<std::string> get_match_arg(const Arguments *args,
+                                                const Position &pos,
+                                                const char prefix = '-') {
   Position arg_pos{pos.index, 0};
   auto r = get_arg(args, arg_pos);
   if (!r.value || !r.value.get()->size() || r.value.get()->at(0) != prefix) {
