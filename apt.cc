@@ -10,13 +10,28 @@ int main(int argc, char *argv[]) {
   cli.add_help();
   bool print_args = false;
 
-  cli.add_option("print-args", [&]() { print_args = true; }, {});
+  std::vector<options_parser::Option*> common_options;
+  common_options.push_back(cli.add_option(
+      "print-args", [&]() { print_args = true; }, {}));
+  std::string result_command;
+  std::vector<std::string> result;
+
+  common_options.push_back(
+      cli.add_option("c", [&](std::string a) {
+          result.push_back("-c");
+          result.push_back(a);
+        },
+        {"-c=?", "Read this configuration file."}));
+
+  common_options.push_back(cli.add_option(
+      "o", [&](std::string a) {
+        result.push_back("-o");
+        result.push_back(a);
+      },
+      {"-o=?", "Set an arbitrary configuration option, eg -o dir::cache=/tmp"}));
 
   options_parser::Parser get_cli("apt-get Commands:", "\n");
   cli.add_parser(get_cli);
-
-  std::string result_command;
-  std::vector<std::string> result;
 
   std::vector<std::pair<std::string, std::string>> get_commands{
       {"update", "Retrieve new lists of packages"},
@@ -41,6 +56,7 @@ int main(int argc, char *argv[]) {
                          result_command = "apt-get";
                          result.push_back(c);
                          cli.toggle();
+                         get_cli.toggle();
                                                              },
                        {c, c_h.second});
   }
@@ -112,6 +128,7 @@ int main(int argc, char *argv[]) {
                            result_command = "apt-cache";
                            result.push_back(c);
                            cli.toggle();
+                           cache_cli.toggle();
                          },
                          {c, c_h.second});
   }
@@ -134,18 +151,43 @@ int main(int argc, char *argv[]) {
       result.push_back("-i");
     }, {"-i", "Show only important deps for the unmet command."});
 
-  cli.add_option("c", [&](std::string a) {
-      result.push_back("-c");
-      result.push_back(a);
-    }, {"-c=?", "Read this configuration file."});
-
-  cli.add_option("o", [&](std::string a) {
-      result.push_back("-o");
-      result.push_back(a);
-    }, {"-o=?", "Set an arbitrary configuration option, eg -o dir::cache=/tmp"});
+  for (auto o : common_options) {
+    get_cli.add_option(*o);
+    cache_cli.add_option(*o);
+  }
 
   options_parser::ArgcArgvArguments arguments(argc, argv);
   auto parse_result = cli.parse({{1, 0}, &arguments});
+
+  if (!result_command.size()) {
+    std::vector<std::string> ar, gr, cr;
+    std::string ac, gc, cc;
+    ar.swap(result);
+    ac.swap(result_command);
+
+    auto less = [](options_parser::Position a,  options_parser::Position b) {
+      return a.index < b.index || (a.index == b.index && a.off < b.off);
+    };
+
+    result.clear();
+    auto gpr = get_cli.parse({{1, 0}, &arguments});
+    if (less(parse_result.position, gpr.position)) {
+      parse_result = gpr;
+      ar.swap(result);
+      ac.swap(result_command);
+    }
+
+    result.clear();
+    auto cpr = cache_cli.parse({{1, 0}, &arguments});
+    if (less(parse_result.position, cpr.position)) {
+      parse_result = cpr;
+      ar.swap(result);
+      ac.swap(result_command);
+    }
+
+    std::swap(ar, result);
+    std::swap(ac, result_command);
+  }
 
   if (parse_result.error && *parse_result.error.get() != "match-none") {
     std::cerr << *parse_result.error.get() << std::endl;
@@ -157,6 +199,12 @@ int main(int argc, char *argv[]) {
 
   if (!result_command.size()) {
     std::cerr << "give me a command ..." << std::endl;
+    if (parse_result.error) {
+      std::cerr << *parse_result.error.get() << std::endl;
+      if (parse_result.error_full) {
+        std::cerr << *parse_result.error_full.get() << std::endl;
+      }
+    }
     return 1;
   }
 
