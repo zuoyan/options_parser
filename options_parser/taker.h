@@ -7,7 +7,7 @@ namespace options_parser {
 
 struct TakeResult {
   Position end;
-  Arguments *args;
+  Arguments args;
   Maybe<std::string> error;
 };
 

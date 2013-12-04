@@ -67,7 +67,7 @@ inline void Parser::enable() {
 inline ParseResult Parser::parse(const PositionArguments &s) {
   PositionArguments c = s;
   ParseResult pr;
-  while (c.position.index < c.args->argc()) {
+  while (c.position.index < c.args.argc()) {
     auto mr_opts = match_results(c);
     auto show_position = [](PositionArguments pa, size_t limit = 80) {
       std::string ret = to_str(pa.position.index);
@@ -76,12 +76,12 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
       }
       auto p = pa.position;
       p.off = 0;
-      if (p.index < pa.args->argc()) {
+      if (p.index < pa.args.argc()) {
         ret += " '" + *get_arg(pa.args, p).value.get() + "'";
       } else {
-        ret += " over size=" + to_str(pa.args->argc());
+        ret += " over size=" + to_str(pa.args.argc());
       }
-      while (ret.size() + 6 < limit && ++p.index < pa.args->argc()) {
+      while (ret.size() + 6 < limit && ++p.index < pa.args.argc()) {
         auto a = *get_arg(pa.args, p).value.get();
         if (ret.size() + a.size() + 2 >= limit) {
           a.resize(limit - 5 - ret.size());
@@ -151,9 +151,8 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
 }
 
 inline ParseResult Parser::parse_string(const std::string &a) {
-  auto argv = expand(a);
-  VectorArgvArguments args(&argv);
-  return parse({{0, 0}, &args});
+  VectorStringArguments args(expand(a));
+  return parse({{0, 0}, args});
 }
 
 inline size_t Parser::parse_lines(const std::vector<std::string> &lines,

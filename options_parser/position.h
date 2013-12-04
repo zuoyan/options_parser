@@ -34,9 +34,9 @@ struct PositionValue {
           value.bind(func), start, end));
 };
 
-inline PositionValue<char> get_char(const Arguments *args,
+inline PositionValue<char> get_char(const Arguments &args,
                                     const Position &pos) {
-  int c = args->char_at(pos.index, pos.off);
+  int c = args.char_at(pos.index, pos.off);
   if (c != -1) {
     Position end{pos.index, pos.off + 1};
     return PositionValue<char>((char)c, pos, end);
@@ -44,12 +44,12 @@ inline PositionValue<char> get_char(const Arguments *args,
   return PositionValue<char>(nothing, pos, pos);
 }
 
-inline PositionValue<std::string> get_arg(const Arguments *args,
+inline PositionValue<std::string> get_arg(const Arguments &args,
                                           const Position &pos) {
-  if (pos.index >= args->argc()) {
+  if (pos.index >= args.argc()) {
     return PositionValue<std::string>(nothing, pos, pos);
   }
-  auto s = args->arg_at(pos.index);
+  auto s = args.arg_at(pos.index);
   if (s.size() >= (size_t)pos.off)
     s = s.substr(pos.off);
   else
@@ -58,7 +58,7 @@ inline PositionValue<std::string> get_arg(const Arguments *args,
   return PositionValue<std::string>(s, pos, end);
 }
 
-inline PositionValue<std::string> get_match_arg(const Arguments *args,
+inline PositionValue<std::string> get_match_arg(const Arguments &args,
                                                 const Position &pos,
                                                 const char prefix = '-') {
   Position arg_pos{pos.index, 0};
@@ -90,7 +90,7 @@ inline PositionValue<std::string> get_match_arg(const Arguments *args,
 
 struct PositionArguments {
   Position position;
-  Arguments *args;
+  Arguments args;
 };
 
 template <class T = std::string, class Check = always_true>

@@ -114,8 +114,8 @@ int main(int argc, char *argv[]) {
                  }),
                  {"--all-int <integer>...", "all following integers"});
 
-  ArgcArgvArguments arguments(argc, argv);
-  auto parse_result = app.parse({{1, 0}, &arguments});
+  ArgvArguments arguments(argc, argv);
+  auto parse_result = app.parse({{1, 0}, arguments});
 
   if (parse_result.error) {
     std::cerr << *parse_result.error.get() << std::endl;

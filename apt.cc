@@ -156,8 +156,8 @@ int main(int argc, char *argv[]) {
     cache_cli.add_option(*o);
   }
 
-  options_parser::ArgcArgvArguments arguments(argc, argv);
-  auto parse_result = cli.parse({{1, 0}, &arguments});
+  options_parser::ArgvArguments arguments(argc, argv);
+  auto parse_result = cli.parse({{1, 0}, arguments});
 
   if (!result_command.size()) {
     std::vector<std::string> ar, gr, cr;
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
     };
 
     result.clear();
-    auto gpr = get_cli.parse({{1, 0}, &arguments});
+    auto gpr = get_cli.parse({{1, 0}, arguments});
     if (less(parse_result.position, gpr.position)) {
       parse_result = gpr;
       ar.swap(result);
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
     }
 
     result.clear();
-    auto cpr = cache_cli.parse({{1, 0}, &arguments});
+    auto cpr = cache_cli.parse({{1, 0}, arguments});
     if (less(parse_result.position, cpr.position)) {
       parse_result = cpr;
       ar.swap(result);

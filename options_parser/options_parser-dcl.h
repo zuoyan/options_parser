@@ -35,7 +35,7 @@ Taker bundle(const std::vector<Option> &options);
 
 struct ParseResult {
   Position position;
-  Arguments *args;
+  Arguments args;
   Maybe<std::string> error;
   Maybe<std::string> error_full;
 };

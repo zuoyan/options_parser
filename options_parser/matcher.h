@@ -15,7 +15,7 @@ constexpr Priority MATCH_PREFIX = 1000;
 constexpr Priority MATCH_EXACT = 10000;
 
 struct MatchResult {
-  Arguments *args;
+  Arguments args;
   Position start;
   Position end;
   Priority priority;
