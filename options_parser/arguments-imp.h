@@ -48,7 +48,7 @@ inline int FunctionArguments::char_at(int idx, int off) const {
   if (char_at_) return char_at_(idx, off);
   assert(!arg_at_);
   auto s = arg_at(idx);
-  if (s.size() >= off) return -1;
+  if (s.size() >= static_cast<size_t>(off)) return -1;
   return s.data()[off];
 }
 
