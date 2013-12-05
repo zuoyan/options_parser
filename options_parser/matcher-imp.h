@@ -1,5 +1,6 @@
 #ifndef FILE_0F882BB8_C84E_465A_BE27_559342975AC1_H
 #define FILE_0F882BB8_C84E_465A_BE27_559342975AC1_H
+#include "options_parser/config.h"
 #include "options_parser/arguments-imp.h"
 #include "options_parser/position-imp.h"
 

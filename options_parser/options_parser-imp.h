@@ -1,5 +1,6 @@
 #ifndef FILE_BE44E7FB_480D_4869_A5D8_0EA9C352CB97_H
 #define FILE_BE44E7FB_480D_4869_A5D8_0EA9C352CB97_H
+#include "options_parser/config.h"
 #include "options_parser/arguments-imp.h"
 #include "options_parser/document-imp.h"
 #include "options_parser/converter-imp.h"

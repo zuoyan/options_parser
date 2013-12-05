@@ -1,5 +1,6 @@
 #ifndef FILE_266AC82D_20F2_4BAA_9935_1880DD37A105_H
 #define FILE_266AC82D_20F2_4BAA_9935_1880DD37A105_H
+#include "options_parser/config.h"
 #include "options_parser/matcher-imp.h"
 #include "options_parser/converter-imp.h"
 

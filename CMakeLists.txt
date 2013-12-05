@@ -8,3 +8,5 @@ SET(CMAKE_CXX_FLAGS "-Wall -std=c++0x")
 ADD_EXECUTABLE(options_parser_test options_parser_test.cc lib_test.cc)
 
 ADD_EXECUTABLE(apt apt.cc)
+
+ADD_LIBRARY(options_parser SHARED options_parser/options_parser_lib.cc)

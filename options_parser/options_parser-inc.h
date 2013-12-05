@@ -1,5 +1,7 @@
 #ifndef FILE_E9EBEEAA_F30F_4CB9_8065_201506C55FA4_H
 #define FILE_E9EBEEAA_F30F_4CB9_8065_201506C55FA4_H
+#include <iostream>
+
 #include "options_parser/arguments-inc.h"
 #include "options_parser/document-inc.h"
 #include "options_parser/converter-inc.h"

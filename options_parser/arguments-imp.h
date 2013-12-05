@@ -1,5 +1,6 @@
 #ifndef FILE_BD1BFE84_A637_4106_98AB_29A59177578F_H
 #define FILE_BD1BFE84_A637_4106_98AB_29A59177578F_H
+#include "options_parser/config.h"
 #include <cassert>
 
 namespace options_parser {
