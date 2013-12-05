@@ -41,12 +41,18 @@ struct ParseResult {
 };
 
 struct Parser {
-  template <class Description, class Information>
-  Parser(const Description &description, const Information &information);
+  template <class Description, class Epilog>
+  Parser(const Description &description, const Epilog &epilog);
 
-  Parser() = default;
+  Parser();
 
   Parser(const Parser &) = default;
+
+  // description is print before options
+  void set_description(const property<string> &description);
+
+  // epilog is print after options
+  void set_epilog(const property<string> &epilog);
 
   bool toggle();
   void disable();
@@ -89,8 +95,8 @@ struct Parser {
     int help_level;
     // description before options
     property<string> description;
-    // information after options
-    property<string> information;
+    // epilog after options
+    property<string> epilog;
     std::vector<std::shared_ptr<Option>> options;
     std::vector<std::pair<int, std::shared_ptr<Holder>>> parsers;
 

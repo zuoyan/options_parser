@@ -10,11 +10,11 @@
 
 namespace options_parser {
 
-template <class Description, class Information>
-Parser::Parser(const Description &description, const Information &information) {
+template <class Description, class Epilog>
+Parser::Parser(const Description &description, const Epilog &epilog) {
   holder_ = std::make_shared<Holder>();
   holder_->description = description;
-  holder_->information = information;
+  holder_->epilog = epilog;
 }
 
 template <class GetLine>

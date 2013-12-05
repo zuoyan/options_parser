@@ -55,20 +55,29 @@ OPTIONS_PARSER_IMP Taker bundle(const std::vector<Option> &options) {
   };
 }
 
+OPTIONS_PARSER_IMP Parser::Parser() { holder_ = std::make_shared<Holder>(); }
+
+OPTIONS_PARSER_IMP void Parser::set_description(
+    const property<string> &description) {
+  holder_->description = description;
+}
+
+OPTIONS_PARSER_IMP void Parser::set_epilog(
+    const property<string> &epilog) {
+  holder_->epilog = epilog;
+}
+
 OPTIONS_PARSER_IMP bool Parser::toggle() {
-  if (!holder_) {
-    holder_ = std::make_shared<Holder>();
-  }
   holder_->active = !holder_->active;
   return holder_->active;
 }
 
 OPTIONS_PARSER_IMP void Parser::disable() {
-  if (toggle()) toggle();
+  holder_->active = false;
 }
 
 OPTIONS_PARSER_IMP void Parser::enable() {
-  if (!toggle()) toggle();
+  holder_->active = true;
 }
 
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
@@ -199,16 +208,10 @@ OPTIONS_PARSER_IMP void Parser::parse_file(const string &fn,
 }
 
 OPTIONS_PARSER_IMP void Parser::add_parser(const Parser &parser, int priority) {
-  if (!holder_) {
-    holder_ = std::make_shared<Holder>();
-  }
   holder_->parsers.push_back(std::make_pair(priority, parser.holder_));
 }
 
 OPTIONS_PARSER_IMP Option *Parser::add_option(const Option &o) {
-  if (!holder_) {
-    holder_ = std::make_shared<Holder>();
-  }
   holder_->options.push_back(std::make_shared<Option>(o));
   return holder_->options.back().get();
 }
@@ -251,8 +254,8 @@ OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {
     auto t = p.documents(level + 1);
     docs.insert(docs.end(), t.begin(), t.end());
   }
-  if (!holder_->information.empty()) {
-    docs.push_back(Document().set_message(holder_->information));
+  if (!holder_->epilog.empty()) {
+    docs.push_back(Document().set_message(holder_->epilog));
   }
   return docs;
 }
