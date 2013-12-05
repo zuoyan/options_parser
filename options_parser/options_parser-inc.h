@@ -4,6 +4,7 @@
 #include "options_parser/document-inc.h"
 #include "options_parser/converter-inc.h"
 #include "options_parser/matcher-inc.h"
+#include "options_parser/position-inc.h"
 
 namespace options_parser {
 

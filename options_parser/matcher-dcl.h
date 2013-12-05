@@ -4,7 +4,7 @@
 
 #include "options_parser/maybe.h"
 #include "options_parser/arguments-dcl.h"
-#include "options_parser/position.h"
+#include "options_parser/position-dcl.h"
 
 namespace options_parser {
 typedef int Priority;

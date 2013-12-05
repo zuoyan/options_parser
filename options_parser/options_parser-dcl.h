@@ -8,7 +8,7 @@
 
 #include "options_parser/arguments-dcl.h"
 #include "options_parser/document-dcl.h"
-#include "options_parser/position.h"
+#include "options_parser/position-dcl.h"
 #include "options_parser/matcher-dcl.h"
 #include "options_parser/taker.h"
 #include "options_parser/converter-dcl.h"
