@@ -103,7 +103,7 @@ struct Parser {
 };
 
 // A default global parser, to hold options across libraries/objects.
-inline Parser &parser();
+Parser &parser();
 
 template <class T>
 Option *define_flag(Parser &parser, const string &flag, T *ptr,

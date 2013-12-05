@@ -5,7 +5,7 @@
 #include "options_parser/position-imp.h"
 
 namespace options_parser {
-inline Matcher::Matcher(Priority priority) {
+OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
   match_ = [priority](const PositionArguments &s) {
     MatchResult mr;
     mr.start = s.position;
@@ -16,7 +16,7 @@ inline Matcher::Matcher(Priority priority) {
   };
 }
 
-inline Matcher::Matcher(
+OPTIONS_PARSER_IMP Matcher::Matcher(
     const std::vector<string> &opts, Maybe<Priority> exact_priority,
     Maybe<Priority> prefix_priority,
     Maybe<state<Either<string>, PositionArguments>> arg_getter) {
@@ -66,7 +66,8 @@ inline Matcher::Matcher(
   };
 }
 
-inline MatchResult Matcher::operator()(const PositionArguments &s) const {
+OPTIONS_PARSER_IMP MatchResult Matcher::operator()(const PositionArguments &s)
+    const {
   return match_(s);
 }
 

@@ -4,19 +4,19 @@
 #include "options_parser/converter-imp.h"
 namespace options_parser {
 
-inline Document::Document() { message_ = false; }
+OPTIONS_PARSER_IMP Document::Document() { message_ = false; }
 
-inline string Document::prefix() const {
+OPTIONS_PARSER_IMP string Document::prefix() const {
   if (prefix_.empty()) return string();
   return prefix_;
 }
 
-inline string Document::description() const {
+OPTIONS_PARSER_IMP string Document::description() const {
   if (description_.empty()) return string();
   return description_;
 }
 
-inline std::vector<string> Document::format(size_t width) const {
+OPTIONS_PARSER_IMP std::vector<string> Document::format(size_t width) const {
   std::vector<string> ret;
   if (message_) {
     if (description_.empty()) return ret;

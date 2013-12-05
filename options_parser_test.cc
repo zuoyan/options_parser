@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cassert>
 
-#include "options_parser/options_parser.h"
+#include "options_parser/options_parser_lib.h"
 
 using namespace options_parser;
 

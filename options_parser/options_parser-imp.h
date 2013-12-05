@@ -9,20 +9,20 @@
 
 namespace options_parser {
 
-inline Option::Option() {
+OPTIONS_PARSER_IMP Option::Option() {
   active = true;
   help_level = 0;
   priority = 0;
 }
 
-inline Option::Option(Matcher m, Taker t, Document d)
+OPTIONS_PARSER_IMP Option::Option(Matcher m, Taker t, Document d)
     : match(m), take(t), document(d) {
   active = true;
   help_level = 0;
   priority = 0;
 }
 
-inline Taker bundle(const std::vector<Option> &options) {
+OPTIONS_PARSER_IMP Taker bundle(const std::vector<Option> &options) {
   return [options](const MatchResult &mr) {
     TakeResult tr;
     PositionArguments pa{mr.start, mr.args};
@@ -55,7 +55,7 @@ inline Taker bundle(const std::vector<Option> &options) {
   };
 }
 
-inline bool Parser::toggle() {
+OPTIONS_PARSER_IMP bool Parser::toggle() {
   if (!holder_) {
     holder_ = std::make_shared<Holder>();
   }
@@ -63,15 +63,15 @@ inline bool Parser::toggle() {
   return holder_->active;
 }
 
-inline void Parser::disable() {
+OPTIONS_PARSER_IMP void Parser::disable() {
   if (toggle()) toggle();
 }
 
-inline void Parser::enable() {
+OPTIONS_PARSER_IMP void Parser::enable() {
   if (!toggle()) toggle();
 }
 
-inline ParseResult Parser::parse(const PositionArguments &s) {
+OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
   PositionArguments c = s;
   ParseResult pr;
   while (c.position.index < c.args.argc()) {
@@ -156,14 +156,14 @@ inline ParseResult Parser::parse(const PositionArguments &s) {
   return pr;
 }
 
-inline ParseResult Parser::parse_string(const string &a) {
+OPTIONS_PARSER_IMP ParseResult Parser::parse_string(const string &a) {
   VectorStringArguments args(expand(a));
   return parse({{0, 0}, args});
 }
 
-inline size_t Parser::parse_lines(const std::vector<string> &lines,
-                                  Maybe<string> *error,
-                                  Maybe<string> *error_full) {
+OPTIONS_PARSER_IMP size_t Parser::parse_lines(const std::vector<string> &lines,
+                                              Maybe<string> *error,
+                                              Maybe<string> *error_full) {
   size_t off = 0;
   return parse_lines([&]()->Maybe<string> {
                        if (off < lines.size()) return lines[off++];
@@ -172,8 +172,9 @@ inline size_t Parser::parse_lines(const std::vector<string> &lines,
                      error, error_full);
 }
 
-inline void Parser::parse_file(const string &fn, Maybe<string> *error,
-                               Maybe<string> *error_full) {
+OPTIONS_PARSER_IMP void Parser::parse_file(const string &fn,
+                                           Maybe<string> *error,
+                                           Maybe<string> *error_full) {
   std::ifstream ifs(fn);
   if (!ifs.good()) {
     *error = "open-failed";
@@ -197,14 +198,14 @@ inline void Parser::parse_file(const string &fn, Maybe<string> *error,
   }
 }
 
-inline void Parser::add_parser(const Parser &parser, int priority) {
+OPTIONS_PARSER_IMP void Parser::add_parser(const Parser &parser, int priority) {
   if (!holder_) {
     holder_ = std::make_shared<Holder>();
   }
   holder_->parsers.push_back(std::make_pair(priority, parser.holder_));
 }
 
-inline Option *Parser::add_option(const Option &o) {
+OPTIONS_PARSER_IMP Option *Parser::add_option(const Option &o) {
   if (!holder_) {
     holder_ = std::make_shared<Holder>();
   }
@@ -212,8 +213,8 @@ inline Option *Parser::add_option(const Option &o) {
   return holder_->options.back().get();
 }
 
-inline Option *Parser::add_option(const Matcher &m, const Taker &t,
-                                  const Document &d) {
+OPTIONS_PARSER_IMP Option *Parser::add_option(const Matcher &m, const Taker &t,
+                                              const Document &d) {
   Option opt;
   opt.match = m;
   opt.take = t;
@@ -222,7 +223,7 @@ inline Option *Parser::add_option(const Matcher &m, const Taker &t,
   return add_option(opt);
 }
 
-inline string Parser::help_message(int level, int width) {
+OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {
   auto docs = documents(level);
   std::vector<string> lines;
   for (const auto &doc : docs) {
@@ -232,7 +233,7 @@ inline string Parser::help_message(int level, int width) {
   return join(lines, '\n');
 }
 
-inline std::vector<Document> Parser::documents(int level) {
+OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {
   std::vector<Document> docs;
   if (!holder_) return docs;
   if (level < holder_->help_level) return docs;
@@ -256,7 +257,7 @@ inline std::vector<Document> Parser::documents(int level) {
   return docs;
 }
 
-inline std::vector<std::pair<MatchResult, std::shared_ptr<Option>>>
+OPTIONS_PARSER_IMP std::vector<std::pair<MatchResult, std::shared_ptr<Option>>>
 Parser::match_results(const PositionArguments &s) const {
   std::vector<std::pair<MatchResult, std::shared_ptr<Option>>> ret;
   if (!holder_ || !holder_->active) return ret;
@@ -291,7 +292,7 @@ Parser::match_results(const PositionArguments &s) const {
 }
 
 // A default global parser, to hold options across libraries/objects.
-inline Parser &parser() {
+OPTIONS_PARSER_IMP Parser &parser() {
   static Parser p;
   return p;
 }

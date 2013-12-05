@@ -6,25 +6,25 @@
 
 namespace options_parser {
 
-inline TakeResult Taker::operator()(const MatchResult &mr) const {
+OPTIONS_PARSER_IMP TakeResult Taker::operator()(const MatchResult &mr) const {
   return take_(mr);
 }
 
-inline Maybe<string> Taker::to_error(Nothing) { return nothing; }
+OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(Nothing) { return nothing; }
 
-inline Maybe<string> Taker::to_error(void_) { return nothing; }
+OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(void_) { return nothing; }
 
-inline Maybe<string> Taker::to_error(int c) {
+OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(int c) {
   if (c > 0) return nothing;
   return "error code: " + std::to_string(c);
 }
 
-inline Maybe<string> Taker::to_error(bool f) {
+OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(bool f) {
   if (f) return nothing;
   return string("failed");
 }
 
-inline Maybe<string> Taker::to_error(const string &e) {
+OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(const string &e) {
   if (!e.size()) return nothing;
   return e;
 }

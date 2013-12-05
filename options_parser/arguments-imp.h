@@ -5,47 +5,49 @@
 
 namespace options_parser {
 
-inline ArgvArguments::ArgvArguments(int argc, char *argv[]) {
+OPTIONS_PARSER_IMP ArgvArguments::ArgvArguments(int argc, char *argv[]) {
   argc_ = argc;
   argv_ = argv;
 }
 
-inline int ArgvArguments::argc() const { return argc_; }
+OPTIONS_PARSER_IMP int ArgvArguments::argc() const { return argc_; }
 
-inline int ArgvArguments::char_at(int idx, int off) const {
+OPTIONS_PARSER_IMP int ArgvArguments::char_at(int idx, int off) const {
   if (idx >= argc_) return -1;
   if ((size_t)off >= strlen(argv_[idx])) return -1;
   return argv_[idx][off];
 }
 
-inline string ArgvArguments::arg_at(int idx) const {
+OPTIONS_PARSER_IMP string ArgvArguments::arg_at(int idx) const {
   if (idx >= argc()) return string();
   return argv_[idx];
 }
 
-inline VectorStringArguments::VectorStringArguments(
+OPTIONS_PARSER_IMP VectorStringArguments::VectorStringArguments(
     const std::vector<string> &argv)
     : argv_(argv) {}
 
-inline int VectorStringArguments::argc() const { return argv_.size(); }
+OPTIONS_PARSER_IMP int VectorStringArguments::argc() const {
+  return argv_.size();
+}
 
-inline int VectorStringArguments::char_at(int idx, int off) const {
+OPTIONS_PARSER_IMP int VectorStringArguments::char_at(int idx, int off) const {
   if (idx >= argc()) return -1;
   if ((size_t)off >= argv_[idx].size()) return -1;
   return argv_[idx][off];
 }
 
-inline string VectorStringArguments::arg_at(int idx) const {
+OPTIONS_PARSER_IMP string VectorStringArguments::arg_at(int idx) const {
   if (idx >= argc()) return string();
   return argv_[idx];
 }
 
-inline FunctionArguments::FunctionArguments(
+OPTIONS_PARSER_IMP FunctionArguments::FunctionArguments(
     std::function<int()> argc, std::function<int(int, int)> char_at,
     std::function<string(int)> arg_at)
     : argc(argc), char_at_(char_at), arg_at_(arg_at) {}
 
-inline int FunctionArguments::char_at(int idx, int off) const {
+OPTIONS_PARSER_IMP int FunctionArguments::char_at(int idx, int off) const {
   if (char_at_) return char_at_(idx, off);
   assert(!arg_at_);
   auto s = arg_at(idx);
@@ -53,7 +55,7 @@ inline int FunctionArguments::char_at(int idx, int off) const {
   return s.data()[off];
 }
 
-inline string FunctionArguments::arg_at(int idx) const {
+OPTIONS_PARSER_IMP string FunctionArguments::arg_at(int idx) const {
   if (arg_at_) return arg_at_(idx);
   assert(char_at_);
   string ret;
