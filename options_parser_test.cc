@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
   Parser app(
       std::string("Test options parser.\n") + "Usage: " + argv[0] +
           " [<options>]\n"
-          "       sub [<sub options>] [--]\n"
+          " sub [<sub options>] [--]\n"
           "Sed ut perspiciatis, unde omnis iste natus error sit voluptatem "
           "accusantium doloremque laudantium, totam rem aperiam eaque ipsa, "
           "quae ab illo inventore veritatis et quasi architecto beatae vitae "
