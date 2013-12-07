@@ -49,18 +49,18 @@ inline void string_to_blocks(const string &s, std::vector<Block> *blocks) {
       if (!blocks->size() || blocks->back().value == " ") continue;
     }
     Block b;
-    bool c = isspace(s[i]);
-    b.drop_at_last = c;
-    b.drop_at_first = c;
+    bool empty = isspace(s[i]);
+    b.drop_at_last = empty;
+    b.drop_at_first = empty;
     b.width = 1;
-    b.width_at_first = c ? 0 : b.width;
-    b.width_at_last = c ? 0 : b.width;
-    b.stretch = c ? 0 : 0;
-    b.stretch_at_last = c ? 0 : b.stretch;
-    b.stretch_at_first = c ? 0 : b.stretch;
+    b.width_at_first = empty ? 0 : b.width;
+    b.width_at_last = empty ? 0 : b.width;
+    b.stretch = 0;
+    b.stretch_at_last = empty ? 0 : b.stretch;
+    b.stretch_at_first = empty ? 0 : b.stretch;
     b.shrink = 0;
-    b.shrink_at_last = c ? 0 : b.shrink;
-    b.shrink_at_first = c ? 0 : b.shrink;
+    b.shrink_at_last = empty ? 0 : b.shrink;
+    b.shrink_at_first = empty ? 0 : b.shrink;
     b.value.push_back(s[i]);
     b.value_at_first = b.value;
     b.value_at_last = b.value;
@@ -185,21 +185,21 @@ inline std::vector<string> break_string(const string &text, size_t width,
                                         bool keep_first_space = true) {
   std::vector<string> ret;
   std::vector<Block> blocks;
-  string_to_blocks(text, &blocks);
   if (keep_first_space) {
-    Block b;
     for (size_t i = 0; i < text.size(); ++i) {
-      if (isspace(text[i])) {
-        b.value += text[i];
-      } else {
-        break;
-      }
+      auto c = text[i];
+      if (!isspace(c)) break;
+      Block b;
+      b.value += c;
+      b.value_at_first = b.value;
+      b.value_at_last = b.value;
+      b.width = b.value.size();
+      b.width_at_first = b.width;
+      b.width_at_last = b.width;
+      blocks.push_back(b);
     }
-    b.width = b.value.size();
-    b.width_at_first = b.width;
-    b.width_at_last = b.width;
-    blocks.push_back(b);
   }
+  string_to_blocks(text, &blocks);
   blocks_fill_penalty_and_hyphen(&blocks, 1000, 100000, 100);
   {
     // fill at tail ...

@@ -6,32 +6,20 @@ namespace options_parser {
 template <class P, class D>
 Document::Document(const P &prefix, const D &description) {
   message_ = false;
-  set_prefix(prefix);
-  set_description(description);
+  prefix_ = as_formatter(prefix);
+  description_ = as_formatter(description);
 }
 
 template <class D>
 Document::Document(const D &description) {
   message_ = false;
-  set_description(description);
-}
-
-template <class P>
-Document &Document::set_prefix(const P &p) {
-  prefix_ = p;
-  return *this;
+  description_ = as_formatter(description);
 }
 
 template <class D>
-Document &Document::set_description(const D &d) {
-  description_ = d;
-  return *this;
-}
-
-template <class D>
-Document &Document::set_message(const D &d) {
+void Document::set_message(const D &d) {
   message_ = true;
-  return set_description(d);
+  description_ = as_formatter(d);
 }
 
 template <class T>

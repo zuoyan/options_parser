@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
   Parser app(
       std::string("Test options parser.\n") + "Usage: " + argv[0] +
           " [<options>]\n"
-          " sub [<sub options>] [--]\n"
+          "            sub [<sub options>] [--]\n"
           "Sed ut perspiciatis, unde omnis iste natus error sit voluptatem "
           "accusantium doloremque laudantium, totam rem aperiam eaque ipsa, "
           "quae ab illo inventore veritatis et quasi architecto beatae vitae "
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
           "ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi "
           "consequatur? Quis autem vel eum iure reprehenderit, qui in ea "
           "voluptate velit esse, quam nihil molestiae consequatur, vel illum, "
-          "qui dolorem eum fugiat, quo voluptas nulla pariatur?\n",
+          "qui dolorem eum fugiat, quo voluptas nulla pariatur?\n\n",
       "This's options parse following a state monad design.\n"
       "At vero eos et accusamus et iusto odio dignissimos ducimus, qui "
       "blanditiis praesentium voluptatum deleniti atque corrupti, quos "

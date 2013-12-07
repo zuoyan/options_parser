@@ -58,27 +58,19 @@ inline formatter formatter_indent(const size_t indent, const formatter &f) {
   return formatter_left(string(indent, ' '), f);
 }
 
-inline formatter as_formatter(const string& text) {
+inline formatter as_formatter(const property<string> &text) {
   auto func = [text](size_t width) {
-    auto ls = split(text, '\n');
     std::vector<string> ret;
-    for (const auto& l: ls) {
-      auto vs = line_breaking::break_string(l, width);
-      for (const auto& v: vs) {
-        ret.push_back(v);
+    if (!text.empty()) {
+      auto ls = split((string)text, '\n');
+      for (const auto &l : ls) {
+        auto vs = line_breaking::break_string(l, width);
+        for (const auto &v : vs) {
+          ret.push_back(v);
+        }
       }
     }
     return ret;
-  };
-  return func;
-}
-
-inline formatter as_formatter(const property<string> &text) {
-  auto func = [text](size_t width) {
-    if (!text.empty()) {
-      return as_formatter((string)text)(width);
-    }
-    return std::vector<string>{};
   };
   return func;
 }
@@ -102,7 +94,7 @@ inline formatter vcat(const std::vector<formatter> &fs) {
 }
 
 template <class... M>
-inline formatter vcat(const std::vector<formatter> &fs, const formatter &a,
+inline formatter vcat(std::vector<formatter> fs, const formatter &a,
                       const M &... more) {
   fs.push_back(a);
   return vcat(fs, more...);
@@ -115,25 +107,22 @@ inline formatter vcat(const H &a, const M &... more) {
 
 struct Document {
   Document();
+
   Document(const Document &) = default;
+
   template <class P, class D>
   Document(const P &prefix, const D &description);
+
   template <class D>
   Document(const D &description);
 
-  string prefix() const;
-  string description() const;
-  template <class P>
-  Document &set_prefix(const P &p);
   template <class D>
-  Document &set_description(const D &d);
-  template <class D>
-  Document &set_message(const D &d);
+  void set_message(const D &d);
 
   std::vector<string> format(size_t width) const;
 
-  property<string> prefix_;
-  property<string> description_;
+  formatter prefix_;
+  formatter description_;
   // if message_ is true, we will format this Document without prefix
   bool message_;
 };

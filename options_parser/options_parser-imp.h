@@ -241,7 +241,9 @@ OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {
   if (!holder_) return docs;
   if (level < holder_->help_level) return docs;
   if (!holder_->description.empty()) {
-    docs.push_back(Document().set_message(holder_->description));
+    Document d;
+    d.set_message(holder_->description);
+    docs.push_back(d);
   }
   for (const auto &opt : holder_->options) {
     if (level >= opt->help_level) {
@@ -255,7 +257,9 @@ OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {
     docs.insert(docs.end(), t.begin(), t.end());
   }
   if (!holder_->epilog.empty()) {
-    docs.push_back(Document().set_message(holder_->epilog));
+    Document d;
+    d.set_message(holder_->epilog);
+    docs.push_back(d);
   }
   return docs;
 }

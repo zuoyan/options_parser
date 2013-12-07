@@ -6,27 +6,20 @@ namespace options_parser {
 
 OPTIONS_PARSER_IMP Document::Document() { message_ = false; }
 
-OPTIONS_PARSER_IMP string Document::prefix() const {
-  if (prefix_.empty()) return string();
-  return prefix_;
-}
-
-OPTIONS_PARSER_IMP string Document::description() const {
-  if (description_.empty()) return string();
-  return description_;
-}
-
 OPTIONS_PARSER_IMP std::vector<string> Document::format(size_t width) const {
-  std::vector<string> ret;
   if (message_) {
-    if (description_.empty()) return ret;
-    // return format_str((string)description_, width);
-    return as_formatter((string)description_)(width);
+    return description_(width);
   }
-  string p, d;
-  if (!prefix_.empty()) p = prefix_;
-  if (!description_.empty()) d = description_;
-  return formatter_hang(18, " ", "", as_formatter(p), as_formatter(d))(width);
+  if (prefix_ && description_) {
+    return formatter_hang(18, " ", "", prefix_, description_)(width);
+  }
+  if (prefix_) {
+    return prefix_(width);
+  }
+  if (description_) {
+    return formatter_indent(20, description_)(width);
+  }
+  return std::vector<string>{};
 }
 
 }  // namespace options_parser
