@@ -74,13 +74,14 @@ struct Parser {
 
   void add_parser(const Parser &parser, int priority = 0);
 
-  Option *add_option(const Option &o);
+  std::shared_ptr<Option> add_option(const Option &o);
 
-  Option *add_option(const Matcher &m, const Taker &t, const Document &d);
+  std::shared_ptr<Option> add_option(const Matcher &m, const Taker &t, const Document &d);
 
   template <class CM = Matcher, class CD = Document>
-  Option *add_help(const CM &m = CM{"h|help"},
-                   const CD &d = CD{"-h, --help", "show help message"});
+  std::shared_ptr<Option> add_help(const CM &m = CM{"h|help"},
+                                   const CD &d =
+                                       CD{"-h, --help", "show help message"});
 
   string help_message(int level, int width);
 
@@ -112,18 +113,18 @@ struct Parser {
 Parser &parser();
 
 template <class T>
-Option *define_flag(Parser &parser, const string &flag, T *ptr,
-                    const string &doc = "");
+std::shared_ptr<Option> define_flag(Parser &parser, const string &flag, T *ptr,
+                                    const string &doc = "");
 
 template <class T>
-Option *define_flag(const string &flag, T *ptr,
-                    const string &doc = "");
+std::shared_ptr<Option> define_flag(const string &flag, T *ptr,
+                                    const string &doc = "");
 
 #define OPTIONS_PARSER_FLAGS_DECLARE(TYPE, NAME) extern TYPE FLAGS_##NAME
 
 #define OPTIONS_PARSER_FLAGS_DEFINE(TYPE, NAME, VALUE, DOC)                  \
   TYPE FLAGS_##NAME = VALUE;                                                 \
-  options_parser::Option *FLAGS_OPTIONS__##NAME =                            \
+  auto FLAGS_OPTIONS__##NAME =                                               \
       options_parser::parser().add_option("--" #NAME, &FLAGS_##NAME,         \
                                           {"--" #NAME "=<" #TYPE ">",        \
                                            "Current value: " +               \

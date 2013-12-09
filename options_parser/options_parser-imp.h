@@ -211,13 +211,13 @@ OPTIONS_PARSER_IMP void Parser::add_parser(const Parser &parser, int priority) {
   holder_->parsers.push_back(std::make_pair(priority, parser.holder_));
 }
 
-OPTIONS_PARSER_IMP Option *Parser::add_option(const Option &o) {
+OPTIONS_PARSER_IMP std::shared_ptr<Option> Parser::add_option(const Option &o) {
   holder_->options.push_back(std::make_shared<Option>(o));
-  return holder_->options.back().get();
+  return holder_->options.back();
 }
 
-OPTIONS_PARSER_IMP Option *Parser::add_option(const Matcher &m, const Taker &t,
-                                              const Document &d) {
+OPTIONS_PARSER_IMP std::shared_ptr<Option> Parser::add_option(
+    const Matcher &m, const Taker &t, const Document &d) {
   Option opt;
   opt.match = m;
   opt.take = t;

@@ -55,7 +55,7 @@ size_t Parser::parse_lines(const GetLine &get_line, Maybe<string> *error,
 }
 
 template <class CM, class CD>
-Option *Parser::add_help(const CM &m, const CD &d) {
+std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
   auto help_take = [this](const MatchResult &) {
     std::cout << help_message(0, 78) << std::endl;
     exit(1);
@@ -66,8 +66,8 @@ Option *Parser::add_help(const CM &m, const CD &d) {
 }
 
 template <class T>
-Option *define_flag(Parser &parser, const string &flag, T *ptr,
-                    const string &doc) {
+std::shared_ptr<Option> define_flag(Parser &parser, const string &flag, T *ptr,
+                                    const string &doc) {
   return parser.add_option(
       flag, ptr,
       {"--" + flag + "<arg>", "Current value: " + delay_to_str(ptr) +
@@ -75,7 +75,8 @@ Option *define_flag(Parser &parser, const string &flag, T *ptr,
 }
 
 template <class T>
-Option *define_flag(const string &flag, T *ptr, const string &doc) {
+std::shared_ptr<Option> define_flag(const string &flag, T *ptr,
+                                    const string &doc) {
   return define_flag(parser(), flag, ptr, doc);
 }
 
