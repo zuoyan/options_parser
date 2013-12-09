@@ -3,7 +3,7 @@ PROJECT(options_parser)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR 1)
 
-SET(CMAKE_CXX_FLAGS "-Wall -std=c++0x")
+SET(CMAKE_CXX_FLAGS "-Wall -std=c++0x -O0 -g -fno-inline")
 
 ADD_LIBRARY(options_parser SHARED options_parser/options_parser_lib.cc)
 
@@ -11,3 +11,6 @@ ADD_EXECUTABLE(options_parser_test options_parser_test.cc lib_test.cc)
 TARGET_LINK_LIBRARIES(options_parser_test options_parser)
 
 ADD_EXECUTABLE(apt apt.cc)
+
+ADD_EXECUTABLE(line_breaking_test line_breaking_test)
+TARGET_LINK_LIBRARIES(line_breaking_test options_parser)
