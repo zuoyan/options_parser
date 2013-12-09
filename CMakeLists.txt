@@ -14,3 +14,5 @@ ADD_EXECUTABLE(apt apt.cc)
 
 ADD_EXECUTABLE(line_breaking_test line_breaking_test)
 TARGET_LINK_LIBRARIES(line_breaking_test options_parser)
+
+ADD_EXECUTABLE(stats stats.cc)
