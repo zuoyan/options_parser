@@ -75,7 +75,10 @@ inline formatter as_formatter(const property<string> &text) {
   return func;
 }
 
-inline formatter as_formatter(const formatter& f) {
+template <class F>
+inline typename std::enable_if<mpl::is_callable<F, int>::value,
+                               formatter>::type
+as_formatter(const F &f) {
   return f;
 }
 
