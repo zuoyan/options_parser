@@ -4,20 +4,11 @@
 #include "options_parser/converter-imp.h"
 namespace options_parser {
 
-OPTIONS_PARSER_IMP Document::Document() { message_ = false; }
+OPTIONS_PARSER_IMP Document::Document() { }
 
 OPTIONS_PARSER_IMP std::vector<string> Document::format(size_t width) const {
-  if (message_) {
-    return description_(width);
-  }
-  if (prefix_ && description_) {
-    return formatter_hang(18, " ", "", prefix_, description_)(width);
-  }
-  if (prefix_) {
-    return prefix_(width);
-  }
-  if (description_) {
-    return formatter_indent(20, description_)(width);
+  if (format_) {
+    return format_(width);
   }
   return std::vector<string>{};
 }

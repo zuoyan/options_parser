@@ -5,21 +5,19 @@ namespace options_parser {
 
 template <class P, class D>
 Document::Document(const P &prefix, const D &description) {
-  message_ = false;
-  prefix_ = as_formatter(prefix);
-  description_ = as_formatter(description);
+  auto p = formatter_indent(1, as_formatter(prefix));
+  auto d = as_formatter(description);
+  format_ = formatter_hang(18, " ", "", p, d);
 }
 
 template <class D>
 Document::Document(const D &description) {
-  message_ = false;
-  description_ = as_formatter(description);
+  new (*this) Document("", description);
 }
 
 template <class D>
 void Document::set_message(const D &d) {
-  message_ = true;
-  description_ = as_formatter(d);
+  format_ = as_formatter(d);
 }
 
 template <class T>

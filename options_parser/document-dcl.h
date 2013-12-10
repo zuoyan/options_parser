@@ -124,10 +124,7 @@ struct Document {
 
   std::vector<string> format(size_t width) const;
 
-  formatter prefix_;
-  formatter description_;
-  // if message_ is true, we will format this Document without prefix
-  bool message_;
+  formatter format_;
 };
 
 template <class T>
