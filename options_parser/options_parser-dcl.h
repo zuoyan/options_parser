@@ -60,6 +60,15 @@ struct Parser {
 
   ParseResult parse(const PositionArguments &s);
 
+  inline ParseResult parse(int argc, char *argv[]) {
+    return parse(PositionArguments(Position(1, 0), ArgvArguments(argc, argv)));
+  }
+
+  inline ParseResult parse(const std::vector<string> argv, size_t off = 1) {
+    return parse(
+        PositionArguments(Position(off, 0), VectorStringArguments(argv)));
+  }
+
   ParseResult parse_string(const string &a);
 
   template <class GetLine>

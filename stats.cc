@@ -105,8 +105,7 @@ int main(int argc, char* argv[]) {
                  {"<values string>",
                   "Add values from string, all non value texts are ignored"});
 
-  options_parser::ArgvArguments arguments(argc, argv);
-  auto parse_result = app.parse({{1, 0}, arguments});
+  auto parse_result = app.parse(argc, argv);
 
   if (parse_result.error) {
     std::cerr << *parse_result.error.get() << std::endl;
