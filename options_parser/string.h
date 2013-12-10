@@ -6,20 +6,20 @@
 namespace options_parser {
 typedef std::string string;
 
-inline std::vector<string> split(const string &s, char sep) {
-  std::vector<string> lines;
+inline std::vector<string> split(const string &s, const string &sep) {
+  std::vector<string> fields;
   size_t off = 0;
   while (off < s.size()) {
-    auto n = s.find('\n', off);
+    auto n = s.find(sep, off);
     if (n >= s.size()) break;
-    lines.push_back(s.substr(off, n - off));
-    off = n + 1;
+    fields.push_back(s.substr(off, n - off));
+    off = n + sep.size();
   }
-  if (off < s.size()) lines.push_back(s.substr(off));
-  return lines;
+  if (off < s.size()) fields.push_back(s.substr(off));
+  return fields;
 }
 
-inline string join(const std::vector<string> &vs, char sep) {
+inline string join(const std::vector<string> &vs, const string& sep) {
   string ret;
   for (size_t i = 0; i < vs.size(); ++i) {
     if (i > 0) ret += sep;
@@ -75,7 +75,7 @@ inline std::vector<string> split_one_line(const string &s, size_t width,
 
 inline std::vector<string> format_str(const string &s, int width) {
   std::vector<string> ret;
-  auto lines = split(s, '\n');
+  auto lines = split(s, "\n");
   for (const auto &line : lines) {
     auto ls = split_one_line(line, width, 0);
     for (const auto &l : ls) {

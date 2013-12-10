@@ -137,7 +137,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
       }
       pr.error = "match-multiple";
       pr.error_full = string("match multiple at ") + show_position(c) +
-                      " with following options:\n" + join(lines, '\n');
+                      " with following options:\n" + join(lines, "\n");
       return pr;
     }
     auto const &mr_opt = mr_opts.front();
@@ -154,7 +154,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
       pr.error = "take-error";
       pr.error_full = string("process failed: ") + *tr.error.get() + "\n" +
                       "at " + show_position(c) + "\n" + "matched option:\n" +
-                      join(mr_opt.second->document.format(78), '\n');
+                      join(mr_opt.second->document.format(78), "\n");
       return pr;
     }
     c.position = tr.end;
@@ -233,7 +233,7 @@ OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {
     auto ls = doc.format(width);
     lines.insert(lines.end(), ls.begin(), ls.end());
   }
-  return join(lines, '\n');
+  return join(lines, "\n");
 }
 
 OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {

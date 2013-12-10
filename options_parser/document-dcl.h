@@ -25,7 +25,7 @@ struct Formatter {
     format_ = [text](size_t width) {
       std::vector<string> ret;
       if (!text.empty()) {
-        auto ls = split((string)text, '\n');
+        auto ls = split((string)text, "\n");
         for (const auto &l : ls) {
           auto vs = line_breaking::break_string(l, width);
           for (const auto &v : vs) {
