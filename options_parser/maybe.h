@@ -111,7 +111,9 @@ struct Maybe {
 
   explicit operator bool() const { return value.get(); }
 
-  template <class U>
+  template <class U,
+            typename std::enable_if<
+                std::is_constructible<cow<T>, const U &>::value, int>::type = 0>
   Maybe(const U &value)
       : value(value) {}
 
@@ -181,7 +183,7 @@ struct Either {
 
   Either(const Error<Other> &e) { other = e.message; }
 
-  template <class U>
+  template <class U, decltype(Maybe<Value>{std::declval<U>()}, 0) = 0>
   Either(const U &v)
       : value(v) {}
 

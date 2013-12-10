@@ -33,10 +33,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
     if (arg_getter) {
       m_s = (*arg_getter.get())(s);
     } else {
-      if (has_raw)
-        m_s = value()(s);
-      else
-        m_s = match_value()(s);
+      m_s = match_value({}, '-', !has_raw)(s);
     }
     MatchResult mr;
     mr.priority = 0;

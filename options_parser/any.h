@@ -40,9 +40,17 @@ struct Any {
     return NULL;
   }
 
+  string to_str() const {
+    if (inst_) {
+      return inst_->to_str();
+    }
+    return "(nil)";
+  }
+
   struct Interface {
     virtual Interface* clone() const = 0;
     virtual const std::type_info& type() const = 0;
+    virtual string to_str() const = 0;
   };
 
   template <class T>
@@ -57,6 +65,8 @@ struct Any {
     virtual const std::type_info& type() const {
       return typeid(T);
     }
+
+    virtual string to_str() const { return options_parser::to_str(value); }
 
     T value;
   };

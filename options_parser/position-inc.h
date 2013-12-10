@@ -43,13 +43,15 @@ state<Either<T>, PositionArguments> value(Check check) {
 }
 
 template <class Check>
-state<Either<string>, PositionArguments> match_value(Check check) {
-  auto func = [check](const PositionArguments & s)
-      ->std::pair<Either<string>, PositionArguments> {
+state<Either<string>, PositionArguments> match_value(Check check, char prefix,
+                                                     bool strip) {
+  auto func = [ check, prefix, strip ](const PositionArguments & s)
+                                          ->std::pair<Either<string>,
+                                                      PositionArguments> {
     if (!check(s)) {
       return std::make_pair(nothing, s);
     }
-    auto r = get_match_arg(s.args, s.position);
+    auto r = get_match_arg(s.args, s.position, prefix, strip);
     PositionArguments pa{r.end, s.args};
     if (r.value) {
       return std::make_pair(*r.value.get(), pa);

@@ -15,3 +15,4 @@ ADD_EXECUTABLE(apt apt.cc)
 ADD_EXECUTABLE(stats stats.cc)
 
 ADD_EXECUTABLE(ls ls.cc)
+TARGET_LINK_LIBRARIES(ls options_parser)

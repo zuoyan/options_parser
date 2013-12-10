@@ -31,11 +31,12 @@ struct state {
   // state &operator=(state &) = default;
   // state &operator=(state &&) = default;
 
-  template <class F,
-            typename std::enable_if<
-                std::is_convertible<
-                    decltype(std::declval<F>()(std::declval<S>())), V>::value,
-                int>::type = 0>
+  template <
+      class F,
+      typename std::enable_if<
+          std::is_convertible<
+              decltype(std::declval<F>()(std::declval<S>()).first), V>::value,
+          int>::type = 0>
   state(const F &func) {
     static_assert(!is_state<F>::value, "...");
     func_ = func;
@@ -142,24 +143,23 @@ struct gather_tuple_impl {
     return gather_tuple_h<I + 1, N>(states, values, v_s.second, error);
   }
 
-    template <class... States>
-    static state<Either<typename gather_value_type<States...>::type>, S>
-    gather_tuple(const std::tuple<States...> &states) {
-      // return state<Either<typename gather_value_type<States...>::type>, S>{};
-      auto func = [states](const S & s)
-          ->std::pair<Either<typename gather_value_type<States...>::type>, S> {
-        typename gather_value_type<States...>::type value;
-        gather_tuple_impl self;
-        Maybe<string> error;
-        auto ns =
-        self.gather_tuple_h<0, sizeof...(States)>(states, value, s, error);
-        if (error) {
-          return std::make_pair(error_message(*error.get()), s);
-        }
-        return std::make_pair(value, ns);
-      };
-      return func;
-    }
+  template <class... States>
+  static state<Either<typename gather_value_type<States...>::type>, S>
+  gather_tuple(const std::tuple<States...> &states) {
+    auto func = [states](const S & s)
+        ->std::pair<Either<typename gather_value_type<States...>::type>, S> {
+      typename gather_value_type<States...>::type value;
+      gather_tuple_impl self;
+      Maybe<string> error;
+      auto ns =
+          self.gather_tuple_h<0, sizeof...(States)>(states, value, s, error);
+      if (error) {
+        return std::make_pair(error_message(*error.get()), s);
+      }
+      return std::make_pair(value, ns);
+    };
+    return func;
+  }
 };
 
 template <class S, class... States>

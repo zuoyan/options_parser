@@ -9,7 +9,7 @@ template <class T>
 struct assign {
   assign(T* ptr) : ptr(ptr) {}
 
-  void operator()(T v) { *ptr = v; }
+  void operator()(T v) const { *ptr = v; }
   T * ptr;
 };
 
@@ -52,7 +52,7 @@ void add_store_flag(Store& store, options_parser::Parser& cli,
 template <class T>
 T get(const Store& store, const std::string& name) {
   if (!store.count(name)) return T{};
-  return *store[name].get<T>();
+  return *store.find(name)->second.get<T>();
 }
 
 int main(int argc, char* argv[]) {
@@ -72,12 +72,67 @@ int main(int argc, char* argv[]) {
   add_store_flag(store, app, "b|escape", false,
                  "print C-style escapes for nongraphic characters");
 
-  add_store_flag(store, app, "block-size", (std::string) "",
-                 "scale sizes by SIZE before printing them.  E.g.,"
-                 " `--block-size=M' prints sizes in units of"
-                 " 1,048,576 bytes.  See SIZE format below.");
+  auto str_to_size = [](std::string bs) {
+    std::istringstream is(bs);
+    size_t v;
+    std::string post;
+    is >> v;
+    if (is.fail()) {
+      v = 1;
+      is.clear();
+    }
+    is >> post;
+    if (post == "G") v *= 1024 * 1024 * 1024;
+    if (post == "M") v *= 1024 * 1024;
+    if (post == "K") v *= 1024;
+    return v;
+  };
 
+  app.add_option("--block-size",
+                 [&](std::string bs) { store["block-size"] = str_to_size(bs); },
+                 {"--block-size=SIZE",
+                  "scale sizes by SIZE before printing them.  E.g.,"
+                  " `--block-size=M' prints sizes in units of"
+                  " 1,048,576 bytes.  See SIZE format below."});
+
+  add_store_flag(store, app, "B|ignore-backups", false,
+                 "do not list implied entries ending with ~");
+  add_store_flag(store, app, "c", false,
+                 "with -lt: sort by, and show, ctime (time of last"
+                 " modification of file status information)"
+                 " with -l: show ctime and sort by name"
+                 " otherwise: sort by ctime, newest first");
+  add_store_flag(store, app, "C", false, "list entries by columns");
+
+  store["color"] = std::string("never");
+
+  app.add_option("--color", options_parser::optional_value().apply([&](
+                                options_parser::Maybe<std::string> v) {
+                              std::string when = "always";
+                              if (v) {
+                                when = get_value(v);
+                              }
+                              store["color"] = when;
+                            }),
+                 {"--color[=WHEN]",
+                  "colorize the output.  WHEN defaults to 'always'"
+                  " or can be 'never' or 'auto'.  More info below"});
   app.parse(argc, argv);
+
+  auto parse_result = app.parse(argc, argv);
+
+  if (parse_result.error) {
+    std::cerr << *parse_result.error.get() << std::endl;
+    if (parse_result.error_full) {
+      std::cerr << *parse_result.error_full.get() << std::endl;
+    }
+    return 1;
+  }
+
+  for (auto k_v : store) {
+    std::cout << "flag:" << k_v.first << " value:" << k_v.second.to_str()
+              << std::endl;
+  }
 
   return 0;
 }

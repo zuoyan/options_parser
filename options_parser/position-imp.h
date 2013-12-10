@@ -32,7 +32,8 @@ OPTIONS_PARSER_IMP PositionValue<string> get_arg(const Arguments &args,
 
 OPTIONS_PARSER_IMP PositionValue<string> get_match_arg(const Arguments &args,
                                                        const Position &pos,
-                                                       const char prefix) {
+                                                       const char prefix,
+                                                       bool strip) {
   Position arg_pos{pos.index, 0};
   auto r = get_arg(args, arg_pos);
   if (!r.value || !r.value.get()->size() || r.value.get()->at(0) != prefix) {
@@ -42,7 +43,7 @@ OPTIONS_PARSER_IMP PositionValue<string> get_match_arg(const Arguments &args,
     return PositionValue<string>(nothing, pos, pos);
   }
   int off = pos.off;
-  if (off == 0) {
+  if (off == 0 && strip) {
     string *p = r.value.mutable_get();
     while (off < (int)p->size() && p->at(off) == prefix) off++;
     *p = p->substr(off);

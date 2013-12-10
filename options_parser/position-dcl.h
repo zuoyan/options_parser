@@ -40,7 +40,7 @@ inline PositionValue<string> get_arg(const Arguments &args,
 
 inline PositionValue<string> get_match_arg(const Arguments &args,
                                            const Position &pos,
-                                           const char prefix = '-');
+                                           const char prefix, bool strip);
 struct PositionArguments {
   PositionArguments(const Position &position, const Arguments &args)
       : position(position), args(args) {}
@@ -55,7 +55,26 @@ template <class T = string, class Check = always_true>
 state<Either<T>, PositionArguments> value(Check check = Check());
 
 template <class Check = always_true>
-state<Either<string>, PositionArguments> match_value(Check check = Check());
+state<Either<string>, PositionArguments> match_value(Check check = Check(),
+                                                     char prefix = '-',
+                                                     bool strip = false);
+
+template <class Check = always_true>
+state<Either<Maybe<string>>, PositionArguments> optional_value(Check check =
+                                                                   Check()) {
+  auto func = [check](PositionArguments pa) {
+    Either<Maybe<string>> v;
+    if (pa.position.off > 0 && check(pa)) {
+      auto v_pa = value()(pa);
+      v.value = v_pa.first.value;
+      pa = v_pa.second;
+    } else {
+      v.value = Maybe<string>{};
+    }
+    return std::make_pair(v, pa);
+  };
+  return func;
+}
 
 template <class T, int... I>
 auto tuple_value_indices(mpl::vector_c<I...>)
