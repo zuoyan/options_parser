@@ -7,10 +7,7 @@ namespace options_parser {
 OPTIONS_PARSER_IMP Document::Document() { }
 
 OPTIONS_PARSER_IMP std::vector<string> Document::format(size_t width) const {
-  if (format_) {
-    return format_(width);
-  }
-  return std::vector<string>{};
+  return format_(width);
 }
 
 }  // namespace options_parser

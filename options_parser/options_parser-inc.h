@@ -13,8 +13,8 @@ namespace options_parser {
 template <class Description, class Epilog>
 Parser::Parser(const Description &description, const Epilog &epilog) {
   holder_ = std::make_shared<Holder>();
-  holder_->description = description;
-  holder_->epilog = epilog;
+  holder_->description.set_message(description);
+  holder_->epilog.set_message(epilog);
 }
 
 template <class GetLine>

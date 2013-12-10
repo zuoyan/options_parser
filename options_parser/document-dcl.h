@@ -11,11 +11,43 @@
 
 namespace options_parser {
 
-typedef std::function<std::vector<string>(size_t width)> formatter;
+struct Formatter {
+  Formatter() = default;
 
-inline formatter formatter_hang(size_t first_width, string hsep, string vsep,
-                                const formatter &first,
-                                const formatter &second) {
+  Formatter(const Formatter &) = default;
+
+  std::vector<string> operator()(size_t width) const {
+    if (format_) return format_(width);
+    return std::vector<string>{};
+  }
+
+  inline Formatter(const property<string> &text) {
+    format_ = [text](size_t width) {
+      std::vector<string> ret;
+      if (!text.empty()) {
+        auto ls = split((string)text, '\n');
+        for (const auto &l : ls) {
+          auto vs = line_breaking::break_string(l, width);
+          for (const auto &v : vs) {
+            ret.push_back(v);
+          }
+        }
+      }
+      return ret;
+    };
+  }
+
+  template <class F, typename std::enable_if<mpl::is_callable<F, int>::value,
+                                             int>::type = 0>
+  Formatter(const F &f) {
+    format_ = f;
+  }
+
+  std::function<std::vector<string>(size_t width)> format_;
+};
+
+inline Formatter hang(size_t first_width, string hsep, string vsep,
+                      const Formatter &first, const Formatter &second) {
   auto func = [first_width, hsep, vsep, first, second](size_t width) {
     auto f = first(width);
     if (width <= first_width + hsep.size() || f.size() != 1 ||
@@ -40,10 +72,10 @@ inline formatter formatter_hang(size_t first_width, string hsep, string vsep,
     }
     return f;
   };
-  return func;
+  return Formatter(func);
 }
 
-inline formatter formatter_left(const string &left, const formatter &f) {
+inline Formatter every_left(const string &left, const Formatter &f) {
   auto func = [left, f](size_t width) {
     auto vs = f(left.size() >= width ? 1 : width - left.size());
     for (auto &v : vs) {
@@ -51,38 +83,14 @@ inline formatter formatter_left(const string &left, const formatter &f) {
     }
     return vs;
   };
-  return func;
+  return Formatter(func);
 }
 
-inline formatter formatter_indent(const size_t indent, const formatter &f) {
-  return formatter_left(string(indent, ' '), f);
+inline Formatter indent(const size_t indent, const Formatter &f) {
+  return every_left(string(indent, ' '), f);
 }
 
-inline formatter as_formatter(const property<string> &text) {
-  auto func = [text](size_t width) {
-    std::vector<string> ret;
-    if (!text.empty()) {
-      auto ls = split((string)text, '\n');
-      for (const auto &l : ls) {
-        auto vs = line_breaking::break_string(l, width);
-        for (const auto &v : vs) {
-          ret.push_back(v);
-        }
-      }
-    }
-    return ret;
-  };
-  return func;
-}
-
-template <class F>
-inline typename std::enable_if<mpl::is_callable<F, int>::value,
-                               formatter>::type
-as_formatter(const F &f) {
-  return f;
-}
-
-inline formatter vcat(const std::vector<formatter> &fs) {
+inline Formatter vcat(const std::vector<Formatter> &fs) {
   auto func = [fs](size_t width) {
     std::vector<string> vs;
     for (const auto& f : fs) {
@@ -93,19 +101,19 @@ inline formatter vcat(const std::vector<formatter> &fs) {
     }
     return vs;
   };
-  return func;
+  return Formatter(func);
 }
 
 template <class... M>
-inline formatter vcat(std::vector<formatter> fs, const formatter &a,
+inline Formatter vcat(std::vector<Formatter> fs, const Formatter &a,
                       const M &... more) {
   fs.push_back(a);
   return vcat(fs, more...);
 }
 
 template <class H, class...M>
-inline formatter vcat(const H &a, const M &... more) {
-  return vcat(std::vector<formatter>{}, as_formatter(a), as_formatter(more)...);
+inline Formatter vcat(const H &a, const M &... more) {
+  return vcat(std::vector<Formatter>{}, Formatter(a), Formatter(more)...);
 }
 
 struct Document {
@@ -124,7 +132,7 @@ struct Document {
 
   std::vector<string> format(size_t width) const;
 
-  formatter format_;
+  Formatter format_;
 };
 
 template <class T>

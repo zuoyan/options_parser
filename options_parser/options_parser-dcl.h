@@ -104,9 +104,9 @@ struct Parser {
     bool active;
     int help_level;
     // description before options
-    property<string> description;
+    Document description;
     // epilog after options
-    property<string> epilog;
+    Document epilog;
     std::vector<std::shared_ptr<Option>> options;
     std::vector<std::pair<int, std::shared_ptr<Holder>>> parsers;
 
