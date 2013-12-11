@@ -6,11 +6,10 @@
 
 namespace options_parser {
 OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
-  match_ = [priority](const PositionArguments &s) {
+  match_ = [priority](const Situation &s) {
     MatchResult mr;
     mr.start = s.position;
-    mr.end = s.position;
-    mr.args = s.args;
+    mr.situation = s;
     mr.priority = priority;
     return mr;
   };
@@ -19,9 +18,9 @@ OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
 OPTIONS_PARSER_IMP Matcher::Matcher(
     const std::vector<string> &opts, Maybe<Priority> exact_priority,
     Maybe<Priority> prefix_priority,
-    Maybe<state<Either<string>, PositionArguments>> arg_getter) {
+    Maybe<state<Either<string>, Situation>> arg_getter) {
   match_ = [opts, exact_priority, prefix_priority, arg_getter](
-      const PositionArguments &s) {
+      const Situation &s) {
     bool has_raw = false;
     for (const auto &opt : opts) {
       if (opt.size() && opt.at(0) == '-') {
@@ -29,17 +28,16 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
         break;
       }
     }
-    std::pair<Either<string>, PositionArguments> m_s;
+    std::pair<Either<string>, Situation> m_s;
     if (arg_getter) {
       m_s = (*arg_getter.get())(s);
     } else {
-      m_s = match_value({}, '-', !has_raw)(s);
+      m_s = match_value(always_true{}, '-', !has_raw)(s);
     }
     MatchResult mr;
     mr.priority = 0;
     mr.start = s.position;
-    mr.args = m_s.second.args;
-    mr.end = m_s.second.position;
+    mr.situation = m_s.second;
     if (get_error(m_s.first)) {
       return mr;
     }
@@ -63,8 +61,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
   };
 }
 
-OPTIONS_PARSER_IMP MatchResult Matcher::operator()(const PositionArguments &s)
-    const {
+OPTIONS_PARSER_IMP MatchResult Matcher::operator()(const Situation &s) const {
   return match_(s);
 }
 

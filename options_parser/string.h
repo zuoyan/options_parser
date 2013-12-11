@@ -2,6 +2,7 @@
 #define FILE_B3B012C5_486F_4FF9_8AF3_C94136A260CE_H
 #include <cassert>
 #include <string>
+#include <vector>
 
 namespace options_parser {
 typedef std::string string;

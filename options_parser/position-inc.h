@@ -21,42 +21,42 @@ PositionValue<T>::PositionValue(const Maybe<T> &v, const Position &s,
     : value(v), start(s), end(e) {}
 
 template <class T, class Check>
-state<Either<T>, PositionArguments> value(Check check) {
-  auto func = [check](const PositionArguments & s)
-      ->std::pair<Either<T>, PositionArguments> {
+state<Either<T>, Situation> value(Check check) {
+  auto func = [check](Situation s)->std::pair<Either<T>, Situation> {
     if (!check(s)) {
       return std::make_pair(error_message("pre check failed"), s);
     }
     auto r = get_arg(s.args, s.position);
-    PositionArguments pa{r.end, s.args};
+    s.position = r.end;
+    s.args = s.args;
     if (!r.value) {
-      return std::make_pair(error_message("no arguments rest"), pa);
+      return std::make_pair(error_message("no arguments rest"), s);
     }
     T val;
     auto ec = from_str(*r.value.get(), &val);
     if (ec) {
-      return std::make_pair(error_message(*ec.get()), pa);
+      return std::make_pair(error_message(*ec.get()), s);
     }
-    return std::make_pair(val, pa);
+    return std::make_pair(val, s);
   };
   return func;
 }
 
 template <class Check>
-state<Either<string>, PositionArguments> match_value(Check check, char prefix,
-                                                     bool strip) {
-  auto func = [ check, prefix, strip ](const PositionArguments & s)
+state<Either<string>, Situation> match_value(Check check, char prefix,
+                                             bool strip) {
+  auto func = [ check, prefix, strip ](Situation s)
                                           ->std::pair<Either<string>,
-                                                      PositionArguments> {
+                                                      Situation> {
     if (!check(s)) {
       return std::make_pair(nothing, s);
     }
     auto r = get_match_arg(s.args, s.position, prefix, strip);
-    PositionArguments pa{r.end, s.args};
+    s.position = r.end;
     if (r.value) {
-      return std::make_pair(*r.value.get(), pa);
+      return std::make_pair(*r.value.get(), s);
     }
-    return std::make_pair(error_message("no arguments rest"), pa);
+    return std::make_pair(error_message("no arguments rest"), s);
   };
   return func;
 };

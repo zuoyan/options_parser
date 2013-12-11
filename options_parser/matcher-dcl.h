@@ -15,9 +15,8 @@ constexpr Priority MATCH_PREFIX = 1000;
 constexpr Priority MATCH_EXACT = 10000;
 
 struct MatchResult {
-  Arguments args;
+  Situation situation;
   Position start;
-  Position end;
   Priority priority;
 };
 
@@ -27,23 +26,22 @@ struct Matcher {
 
   Matcher(Priority priority);
 
-  template <class F, decltype(*(MatchResult *)0 = std::declval<F>()(
-                                  std::declval<PositionArguments>()),
+  template <class F, decltype(*(MatchResult *)0 =
+                                  std::declval<F>()(std::declval<Situation>()),
                               0) = 0>
   Matcher(const F &func) {
     match_ = func;
   }
 
   template <class F, decltype(*(int *)0 = get_value(std::declval<F>()(
-                                  std::declval<PositionArguments>()).first),
+                                  std::declval<Situation>()).first),
                               0) = 0>
   Matcher(const F &func) {
-    match_ = [func](const PositionArguments &s) {
+    match_ = [func](const Situation &s) {
       auto v_s = func(s);
       MatchResult mr;
       mr.start = s.position;
-      mr.args = v_s.second.args;
-      mr.end = v_s.second.position;
+      mr.situation = v_s.second;
       mr.priority = 0;
       if (!get_error(v_s.first)) {
         mr.priority = get_value(v_s.first);
@@ -55,12 +53,12 @@ struct Matcher {
   Matcher(const std::vector<string> &opts,
           Maybe<Priority> exact_priority = nothing,
           Maybe<Priority> prefix_priority = nothing,
-          Maybe<state<Either<string>, PositionArguments>> arg_getter = nothing);
+          Maybe<state<Either<string>, Situation>> arg_getter = nothing);
 
   template <class S, decltype(*(string *)0 = std::declval<S>(), 0) = 0>
   Matcher(S &&s, Maybe<Priority> exact_priority = nothing,
           Maybe<Priority> prefix_priority = nothing,
-          Maybe<state<Either<string>, PositionArguments>> arg_getter =
+          Maybe<state<Either<string>, Situation>> arg_getter =
               nothing) {
     string opt_str = s;
     std::vector<string> opts;
@@ -76,9 +74,9 @@ struct Matcher {
     new (this) Matcher(opts, exact_priority, prefix_priority, arg_getter);
   }
 
-  MatchResult operator()(const PositionArguments &s) const;
+  MatchResult operator()(const Situation &s) const;
 
-  std::function<MatchResult(const PositionArguments &)> match_;
+  std::function<MatchResult(const Situation &)> match_;
 };
 
 }  // namespace options_parser

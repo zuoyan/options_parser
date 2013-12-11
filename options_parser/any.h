@@ -66,7 +66,31 @@ struct Any {
       return typeid(T);
     }
 
-    virtual string to_str() const { return options_parser::to_str(value); }
+    template <class U>
+    struct has_to_str {
+      template <class UU>
+      static auto deduce(UU *) -> decltype(options_parser::to_str(std::declval<UU>()), std::declval<std::true_type>());
+
+      template <class UU>
+      static std::false_type deduce(...);
+
+      typedef decltype(deduce<U>((U*)0)) type;
+      static constexpr bool value = type::value;
+    };
+
+    template <class U>
+    typename std::enable_if<has_to_str<U>::value, string>::type to_str_impl(
+        const U& value) const {
+      return options_parser::to_str(value);
+    }
+
+    template <class U>
+    typename std::enable_if<!has_to_str<U>::value, string>::type to_str_impl(
+        const U& value) const {
+      return "to_str not-implemented";
+    }
+
+    virtual string to_str() const { return to_str_impl(value); }
 
     T value;
   };

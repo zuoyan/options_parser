@@ -2,9 +2,11 @@
 #define FILE_024ED828_8C97_4719_8FDB_B71DEB72390D_H
 #include <type_traits>
 #include <cassert>
+#include <tuple>
 
 #include "options_parser/cow.h"
 #include "options_parser/mpl.h"
+#include "options_parser/string.h"
 
 #define OPTIONS_PARSER_AUTO_RETURN(...) \
   ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
@@ -183,7 +185,9 @@ struct Either {
 
   Either(const Error<Other> &e) { other = e.message; }
 
-  template <class U, decltype(Maybe<Value>{std::declval<U>()}, 0) = 0>
+  template <class U,
+            typename std::enable_if<
+                std::is_constructible<Maybe<Value>, U>::value, int>::type = 0>
   Either(const U &v)
       : value(v) {}
 

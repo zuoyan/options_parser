@@ -14,6 +14,7 @@
 #include "options_parser/converter-dcl.h"
 #include "options_parser/property.h"
 #include "options_parser/expand.h"
+#include "options_parser/circumstance.h"
 
 namespace options_parser {
 
@@ -34,8 +35,7 @@ struct Option {
 Taker bundle(const std::vector<Option> &options);
 
 struct ParseResult {
-  Position position;
-  Arguments args;
+  Situation situation;
   Maybe<string> error;
   Maybe<string> error_full;
 };
@@ -58,15 +58,28 @@ struct Parser {
   void disable();
   void enable();
 
-  ParseResult parse(const PositionArguments &s);
+  ParseResult parse(const Situation &s);
 
   inline ParseResult parse(int argc, char *argv[]) {
-    return parse(PositionArguments(Position(1, 0), ArgvArguments(argc, argv)));
+    Situation s;
+    s.args = ArgvArguments(argc, argv);
+    s.position = Position(1, 0);
+    if (holder_) {
+      holder_->circumstance.check_init();
+      s.circumstance = holder_->circumstance;
+    }
+    return parse(s);
   }
 
   inline ParseResult parse(const std::vector<string> argv, size_t off = 1) {
-    return parse(
-        PositionArguments(Position(off, 0), VectorStringArguments(argv)));
+    Situation s;
+    s.args = VectorStringArguments(argv);
+    s.position = Position(off, 0);
+    if (holder_) {
+      holder_->circumstance.check_init();
+      s.circumstance = holder_->circumstance;
+    }
+    return parse(s);
   }
 
   ParseResult parse_string(const string &a);
@@ -94,10 +107,14 @@ struct Parser {
 
   string help_message(int level, int width);
 
+  void set_circumstance(const Circumstance &circumstance) {
+    holder_->circumstance = circumstance;
+  }
+
  private:
   std::vector<Document> documents(int level);
   std::vector<std::pair<MatchResult, std::shared_ptr<Option>>> match_results(
-      const PositionArguments &s) const;
+      const Situation &s) const;
 
   // To make parser works in value semantic
   struct Holder {
@@ -109,7 +126,9 @@ struct Parser {
     Document epilog;
     std::vector<std::shared_ptr<Option>> options;
     std::vector<std::pair<int, std::shared_ptr<Holder>>> parsers;
-
+    // The outest circumstance(the one in parser who called parse) is passed to
+    // every matcher and taker.
+    Circumstance circumstance;
     Holder() {
       active = true;
       help_level = 0;

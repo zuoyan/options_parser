@@ -25,13 +25,12 @@ OPTIONS_PARSER_IMP Option::Option(Matcher m, Taker t, Document d)
 OPTIONS_PARSER_IMP Taker bundle(const std::vector<Option> &options) {
   return [options](const MatchResult &mr) {
     TakeResult tr;
-    PositionArguments pa{mr.start, mr.args};
     std::vector<std::pair<size_t, MatchResult>> mrs;
     for (size_t i = 0; i < options.size(); ++i) {
       auto &opt = options[i];
-      auto mr = opt.match(pa);
-      if (mr.priority) {
-        mrs.push_back(std::make_pair(i, mr));
+      auto cmr = opt.match(mr.situation);
+      if (cmr.priority) {
+        mrs.push_back(std::make_pair(i, cmr));
       }
     }
     Priority pri = std::numeric_limits<Priority>::min();
@@ -80,25 +79,26 @@ OPTIONS_PARSER_IMP void Parser::enable() {
   holder_->active = true;
 }
 
-OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
-  PositionArguments c = s;
+OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
+  set_circumstance(s.circumstance);
+  Situation c = s;
   ParseResult pr;
   while (c.position.index < c.args.argc()) {
     auto mr_opts = match_results(c);
-    auto show_position = [](PositionArguments pa, size_t limit = 80) {
-      string ret = to_str(pa.position.index);
-      if (pa.position.off) {
-        ret += "off=" + to_str(pa.position.off) + ", ";
+    auto show_position = [](const Situation& s, size_t limit = 80) {
+      string ret = to_str(s.position.index);
+      if (s.position.off) {
+        ret += "off=" + to_str(s.position.off) + ", ";
       }
-      auto p = pa.position;
+      auto p = s.position;
       p.off = 0;
-      if (p.index < pa.args.argc()) {
-        ret += " '" + *get_arg(pa.args, p).value.get() + "'";
+      if (p.index < s.args.argc()) {
+        ret += " '" + *get_arg(s.args, p).value.get() + "'";
       } else {
-        ret += " over size=" + to_str(pa.args.argc());
+        ret += " over size=" + to_str(s.args.argc());
       }
-      while (ret.size() + 6 < limit && ++p.index < pa.args.argc()) {
-        auto a = *get_arg(pa.args, p).value.get();
+      while (ret.size() + 6 < limit && ++p.index < s.args.argc()) {
+        auto a = *get_arg(s.args, p).value.get();
         if (ret.size() + a.size() + 2 >= limit) {
           a.resize(limit - 5 - ret.size());
           a += " ...";
@@ -108,8 +108,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
       return ret;
     };
     if (!mr_opts.size()) {
-      pr.position = c.position;
-      pr.args = c.args;
+      pr.situation = c;
       pr.error = "match-none";
       pr.error_full = string("match nothing at ") + show_position(c);
       return pr;
@@ -126,8 +125,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
           return mr_opt.first.priority != max_pri;
         });
     if (last - mr_opts.begin() >= 2) {
-      pr.position = c.position;
-      pr.args = c.args;
+      pr.situation = c;
       std::vector<string> lines;
       for (auto it = mr_opts.begin(); it != last; ++it) {
         auto &doc = it->second->document;
@@ -149,19 +147,16 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const PositionArguments &s) {
     // std::cerr << "tr end " << tr.end.index
     //           << ":" << tr.end.off << std::endl;
     if (tr.error) {
-      pr.position = c.position;
-      pr.args = c.args;
+      pr.situation = c;
       pr.error = "take-error";
       pr.error_full = string("process failed: ") + *tr.error.get() + "\n" +
                       "at " + show_position(c) + "\n" + "matched option:\n" +
                       join(mr_opt.second->document.format(78), "\n");
       return pr;
     }
-    c.position = tr.end;
-    c.args = tr.args;
+    c = tr.situation;
   }
-  pr.position = c.position;
-  pr.args = c.args;
+  pr.situation = c;
   return pr;
 }
 
@@ -257,7 +252,7 @@ OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {
 }
 
 OPTIONS_PARSER_IMP std::vector<std::pair<MatchResult, std::shared_ptr<Option>>>
-Parser::match_results(const PositionArguments &s) const {
+Parser::match_results(const Situation &s) const {
   std::vector<std::pair<MatchResult, std::shared_ptr<Option>>> ret;
   if (!holder_ || !holder_->active) return ret;
   Priority cur_pri = std::numeric_limits<Priority>::min();
