@@ -3,212 +3,197 @@
 
 #include <map>
 
-typedef std::map<std::string, options_parser::Any> Store;
-
-template <class T>
-struct assign {
-  assign(T* ptr) : ptr(ptr) {}
-
-  void operator()(T v) const { *ptr = v; }
-  T * ptr;
-};
-
-template <class T>
-void add_store_flag(Store& store, options_parser::Parser& cli,
-                    const std::string& flags, const T& default_value,
-                    const std::string& name, const std::string& doc) {
-  auto opts = options_parser::split(flags, "|");
-  std::string flag = opts.back();
-  for (auto& o : opts) {
-    if (o.size() == 1) {
-      o = "-" + o;
-    } else {
-      o = "--" + o;
-    }
-  }
-  store[flag] = default_value;
-  auto p = store[flag].mutable_get<T>();
-  cli.add_option(opts, assign<T>{p},
-                 {options_parser::join(opts, ", ") + "=" + name, doc});
-}
-
-template <class T>
-void add_store_flag(Store& store, options_parser::Parser& cli,
-                    const std::string& flags, const T& default_value,
-                    const std::string& doc) {
-  add_store_flag(store, cli, flags, default_value, "?", doc);
-}
-
-void add_store_flag(Store& store, options_parser::Parser& cli,
-                    const std::string& flags, const bool& default_value,
-                    const std::string& doc) {
-  auto opts = options_parser::split(flags, "|");
-  std::string flag = opts.back();
-  for (auto& o : opts) {
-    if (o.size() == 1) {
-      o = "-" + o;
-    } else {
-      o = "--" + o;
-    }
-  }
-  store[flag] = default_value;
-  auto p = store[flag].mutable_get<bool>();
-  cli.add_option(opts, [p]() { *p = true; },
-                 {options_parser::join(opts, ", "), doc});
-}
-
-void add_store_flag(Store& store, options_parser::Parser& cli,
-                    const std::string& flags, const std::string& doc) {
-  add_store_flag(store, cli, flags, false, doc);
-}
-
-template <class T>
-T get(const Store& store, const std::string& name) {
-  if (!store.count(name)) return T{};
-  return *store.find(name)->second.get<T>();
-}
-
 int main(int argc, char* argv[]) {
   options_parser::Parser app("ls", "try ls command");
-  app.add_help();
+  options_parser::Circumstance circumstance;
+  circumstance.init();
+  app.set_circumstance(circumstance);
 
-  Store store;
+  app.add_parser(options_parser::parser());
 
-  add_store_flag(store, app, "a|all", "do not ignore entries starting with .");
+  app.add_flag("a|all", "do not ignore entries starting with .");
 
-  add_store_flag(store, app, "A|almost-all", "do not list implied . and ..");
+  app.add_flag("A|almost-all", "do not list implied . and ..");
 
-  add_store_flag(store, app, "author",
-                 "with -l, print the author of each file");
-  add_store_flag(store, app, "b|escape",
-                 "print C-style escapes for nongraphic characters");
+  app.add_flag("author", "with -l, print the author of each file");
+  app.add_flag("b|escape", "print C-style escapes for nongraphic characters");
 
-  auto str_to_size = [](std::string bs) {
-    std::istringstream is(bs);
-    size_t v;
-    std::string post;
-    is >> v;
-    if (is.fail()) {
-      v = 1;
-      is.clear();
-    }
-    is >> post;
-    if (post == "G") v *= 1024 * 1024 * 1024;
-    if (post == "M") v *= 1024 * 1024;
-    if (post == "K") v *= 1024;
-    return v;
-  };
+  app.add_flag("--block-size=SIZE",
+               "scale sizes by SIZE before printing them.  E.g.,"
+               " `--block-size=M' prints sizes in units of"
+               " 1,048,576 bytes.  See SIZE format below.");
 
-  app.add_option("--block-size",
-                 [&](std::string bs) { store["block-size"] = str_to_size(bs); },
-                 {"--block-size=SIZE",
-                  "scale sizes by SIZE before printing them.  E.g.,"
-                  " `--block-size=M' prints sizes in units of"
-                  " 1,048,576 bytes.  See SIZE format below."});
+  app.add_flag("B|ignore-backups", "do not list implied entries ending with ~");
+  app.add_flag("c",
+               "with -lt: sort by, and show, ctime (time of last"
+               " modification of file status information)"
+               " with -l: show ctime and sort by name"
+               " otherwise: sort by ctime, newest first");
+  app.add_flag("C", "list entries by columns");
 
-  add_store_flag(store, app, "B|ignore-backups",
-                 "do not list implied entries ending with ~");
-  add_store_flag(store, app, "c",
-                 "with -lt: sort by, and show, ctime (time of last"
-                 " modification of file status information)"
-                 " with -l: show ctime and sort by name"
-                 " otherwise: sort by ctime, newest first");
-  add_store_flag(store, app, "C", "list entries by columns");
+  app.add_optional_flag("--color=[WHEN]", std::string("always"),
+                        "colorize the output.  WHEN defaults to 'always'"
+                        " or can be 'never' or 'auto'.  More info below");
 
-  store["color"] = std::string("never");
+  app.add_flag("d|directory",
+               "list directory entries instead of contents,"
+               " and do not dereference symbolic links");
 
-  app.add_option("--color", options_parser::optional_value().apply([&](
-                                options_parser::Maybe<std::string> v) {
-                              std::string when = "always";
-                              if (v) {
-                                when = get_value(v);
-                              }
-                              store["color"] = when;
-                            }),
-                 {"--color[=WHEN]",
-                  "colorize the output.  WHEN defaults to 'always'"
-                  " or can be 'never' or 'auto'.  More info below"});
-
-  add_store_flag(store, app, "d|directory", false,
-                 "list directory entries instead of contents,"
-                 " and do not dereference symbolic links");
-
-  add_store_flag(store, app, "D|dired", false,
-                 "generate output designed for Emacs' dired mode");
+  app.add_flag("D|dired",
+               "generate output designed for Emacs' dired mode");
 
   app.add_option("-f", [&]() {
-      store["all"] = false;
-      store["sort"] = false;
-      store["list"] = false;
-      store["size"] = 0;
-      store["color"] = std::string("never");
+                         *circumstance.flag<bool>("all") = false;
+                         *circumstance.flag<bool>("sort") = false;
+                         *circumstance.flag<bool>("list") = false;
+                         *circumstance.flag<bool>("size") = 0;
+                         *circumstance.flag<std::string>("color") =
+                             std::string("never");
                        },
                  "do not sort, enable -aU, disable -ls --color");
 
-  add_store_flag(store, app, "F|classify", false,
-                 "append indicator (one of */=>@|) to entries");
+  app.add_flag("F|classify",
+               "append indicator (one of */=>@|) to entries");
 
-  add_store_flag(store, app, "file-type", false,
-                 "likewise, except do not append '*'");
+  app.add_flag("file-type", "likewise, except do not append '*'");
 
-  add_store_flag(store, app, "format", std::string(), "WORD",
-                 "across -x, commas -m, horizontal -x, long -l,"
-                 " single-column -1, verbose -l, vertical -C");
-  add_store_flag(store, app, "full-time", false,
-                 "like -l --time-style=full-iso");
+  app.add_flag<std::string>("--format=WORD",
+                             "across -x, commas -m, horizontal -x, long -l,"
+                             " single-column -1, verbose -l, vertical -C");
 
-  add_store_flag(store, app, "g", false,
-                 "like -l, but do not list owner");
+  app.add_flag("full-time", "like -l --time-style=full-iso");
 
-  add_store_flag(store, app, "group-directories-first", false,
-                 "group directories before files."
-                 " augment with a --sort option, but any"
-                 " use of --sort=none (-U) disables grouping");
+  app.add_flag("g", "like -l, but do not list owner");
 
-  add_store_flag(store, app, "G|no-group", false,
-                 "in a long listing, don't print group names");
+  app.add_flag("group-directories-first",
+               "group directories before files."
+               " augment with a --sort option, but any"
+               " use of --sort=none (-U) disables grouping");
 
-  add_store_flag(store, app, "h|human-readable", false,
-                 "with -l, print sizes in human readable format"
-                 " (e.g., 1K 234M 2G)");
+  app.add_flag("G|no-group",
+               "in a long listing, don't print group names");
 
-  add_store_flag(store, app, "si", "likewise, but use powers of 1000 not 1024");
+  app.add_flag("h|human-readable",
+               "with -l, print sizes in human readable format"
+               " (e.g., 1K 234M 2G)");
 
-  add_store_flag(store, app, "H|dereference-command-line",
-                 false, "follow symbolic links listed on the command line");
+  app.add_flag("si", "likewise, but use powers of 1000 not 1024");
 
-  add_store_flag(store, app, "dereference-command-line-symlink-to-dir", false,
-                 "follow each command line symbolic link"
-                 " that points to a directory");
+  app.add_flag("H|dereference-command-line",
+               "follow symbolic links listed on the command line");
 
-  add_store_flag(store, app, "hide", std::string(), "PATTERN",
-                 "do not list implied entries matching shell PATTERN"
-                 " (overridden by -a or -A)");
+  app.add_flag("dereference-command-line-symlink-to-dir",
+               "follow each command line symbolic link"
+               " that points to a directory");
 
-  add_store_flag(store, app, "indicator-style", std::string(), "WORD",
-                 "append indicator with style WORD to entry names:"
-                 " none (default), slash (-p),"
-                 " file-type (--file-type), classify (-F)");
+  app.add_flag<std::string>("--hide=PATTERN",
+                            "do not list implied entries matching shell PATTERN"
+                            " (overridden by -a or -A)");
 
-  add_store_flag(store, app, "i|inode", "print the index number of each file");
+  app.add_flag<std::string>("--indicator-style=WORD",
+                             "append indicator with style WORD to entry names:"
+                             " none (default), slash (-p),"
+                            " file-type (--file-type), classify (-F)");
 
-  add_store_flag(store, app, "I|ignore", std::string(), "PATTERN",
-                 "do not list implied entries matching shell PATTERN");
+  app.add_flag("i|inode", "print the index number of each file");
 
-  app.add_option("-k|--kibibytes",
-                 [&]() { store["block-size"] = (size_t)1024; },
-                 {"-k, --kibibytes", "use 1024-byte blocks"});
+  app.add_flag<std::string>(
+      "-I, --ignore=PATTERN",
+      "do not list implied entries matching shell PATTERN");
 
-  add_store_flag(store, app, "l", "use a long listing format");
+  app.add_option(
+      "-k|--kibibytes",
+      [&]() { *circumstance.flag<size_t>("block-size") = (size_t)1024; },
+      "use 1024-byte blocks");
 
-  add_store_flag(store, app, "L|dereference",
-                 "when showing file information for a symbolic"
-                 " link, show information for the file the link"
-                 " references rather than for the link itself");
-  add_store_flag(store, app, "m",
-                 "fill width with a comma separated list of entries");
-  add_store_flag(store, app, "n|numeric-uid-gid",
-                 "like -l, but list numeric user and group IDs");
+  app.add_flag("l", "use a long listing format");
+
+  app.add_flag("L|dereference",
+               "when showing file information for a symbolic"
+               " link, show information for the file the link"
+               " references rather than for the link itself");
+  app.add_flag("m", "fill width with a comma separated list of entries");
+  app.add_flag("n|numeric-uid-gid",
+               "like -l, but list numeric user and group IDs");
+
+  app.add_flag("N|literal", "print raw entry names (don't treat e.g. control"
+               " characters specially)");
+  app.add_flag("o", "like -l, but do not list group information");
+  app.add_flag("p", {"-p, --indicator-style=slash",
+                     "append / indicator to directories"});
+
+  app.add_flag("q|hide-control-chars", "print ? instead of non graphic characters");
+
+  app.add_flag("show-control-chars", "show non graphic characters as-is (default"
+               " unless program is `ls' and output is a terminal)");
+
+  app.add_flag("Q|quote-name", "enclose entry names in double quotes");
+  app.add_flag<std::string>("--quoting-style=WORD",
+                            "use quoting style WORD for entry names:"
+                            " literal, locale, shell, shell-always, c, escape");
+
+  app.add_flag("r|reverse", "reverse order while sorting");
+  app.add_flag("R|recursive", "list subdirectories recursively");
+  app.add_flag("s|size", "print the allocated size of each file, in blocks");
+  app.add_flag("S", "sort by file size");
+  app.add_flag<std::string>("--sort=WORD",
+                            "sort by WORD instead of name: none -U,"
+                            " extension -X, size -S, time -t, version -v");
+  app.add_flag<std::string>("--time=WORD",
+                            "with -l, show time as WORD instead of modification"
+                            " time: atime -u, access -u, use -u, ctime -c,"
+                            " or status -c; use specified time as sort key"
+                            " if --sort=time");
+  app.add_flag<std::string>("--time-style=STYLE",
+                            "with -l, show times using style STYLE:"
+                            " full-iso, long-iso, iso, locale, +FORMAT."
+                            " FORMAT is interpreted like `date'; if FORMAT is"
+                            " FORMAT1<newline>FORMAT2, FORMAT1 applies to"
+                            " non-recent files and FORMAT2 to recent files;"
+                            " if STYLE is prefixed with `posix-', STYLE"
+                            " takes effect only outside the POSIX locale");
+  app.add_option("-t",
+                 [&]() { *circumstance.flag<std::string>("sort") = "time"; },
+                 {"-t", "sort by modification time, newest first"});
+
+  app.add_flag<size_t>("-T|--tabsize=COLS",
+                       "assume tab stops at each COLS instead of 8");
+  app.add_flag("u",
+               "with -lt: sort by, and show, access time, "
+               "with -l: show access time and sort by name,"
+               " otherwise: sort by access time");
+
+  app.add_option("U", [&]() { *circumstance.flag<std::string>("sort") = ""; },
+                 "do not sort; list entries in directory order");
+
+  app.add_option(
+      "v",
+      [&]() { *circumstance.flag<std::string>("sort") = "natural-number"; },
+      "natural sort of (version) numbers within text");
+
+  app.add_flag<size_t>("w|width=COLS",
+                       "assume screen width instead of current value");
+
+  app.add_flag("x", "list entries by lines instead of by columns");
+
+  app.add_option(
+      "X",
+      [&]() { *circumstance.flag<std::string>("sort") = "alphabetically"; },
+      "sort alphabetically by entry extension");
+
+  app.add_flag(
+      "Z|context", "print any SELinux security context of each file");
+
+  app.add_flag("1", "list one file per line");
+
+  app.add_option("--version", []() {
+                                std::cout << "ls (GNU coreutils) 8.13 ..."
+                                          << std::endl;
+                                exit(1);
+                              },
+                 "output version information and exit");
+
+  app.add_help("--help");
 
   app.parse(argc, argv);
 
@@ -222,9 +207,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  for (auto k_v : store) {
-    std::cout << k_v.first << ": " << k_v.second.to_str() << std::endl;
-  }
+  std::cout << circumstance.to_str() << std::endl;
 
   return 0;
 }

@@ -138,12 +138,6 @@ struct Maybe {
 
   T *mutable_get() { return value.mutable_get(); }
 
-  explicit operator T() const {
-    auto ptr = get();
-    assert(ptr);
-    return *ptr;
-  }
-
   template <class Func>
   auto bind(Func &&func) const
       OPTIONS_PARSER_AUTO_RETURN(value ? maybe(func(*value.get())) : nothing);
@@ -220,13 +214,13 @@ T get_value(const T &v) {
 
 template <class T>
 T get_value(const Maybe<T> &v) {
-  assert(v);
+  assert(v.get());
   return *v.get();
 }
 
 template <class T>
 T get_value(const Either<T> &ve) {
-  assert(!ve.other);
+  assert(!ve.other.get());
   return *ve.value.get();
 }
 

@@ -98,12 +98,89 @@ struct Parser {
 
   std::shared_ptr<Option> add_option(const Option &o);
 
-  std::shared_ptr<Option> add_option(const Matcher &m, const Taker &t, const Document &d);
+  std::shared_ptr<Option> add_option(const Matcher &m, const Taker &t,
+                                     const Document &d);
+
+  template <
+      class CM, class CD,
+      typename std::enable_if<std::is_constructible<string, CM>::value &&
+                                  std::is_constructible<string, CD>::value,
+                              int>::type = 0>
+  std::shared_ptr<Option> add_option(const CM &m, const Taker &t, const CD &d) {
+    std::vector<string> opts = split(m, "|");
+    bool is_raw = (opts.front().size() && opts.front()[0] == '-');
+    std::string pattern;
+    if (opts.back().find("=") < opts.back().size()) {
+      auto &b = opts.back();
+      pattern = b.substr(b.find('='), 0);
+      b = b.substr(0, b.find('='));
+    }
+    auto opts_prefix = opts;
+    if (!is_raw) {
+      for (auto & o : opts_prefix) {
+        o = (o.size() == 1 ? "-" : "--") + o;
+      }
+    }
+    return add_option(Matcher(opts), t, {join(opts_prefix, ", ") + pattern, d});
+  }
 
   template <class CM = Matcher, class CD = Document>
   std::shared_ptr<Option> add_help(const CM &m = CM{"h|help"},
-                                   const CD &d =
-                                       CD{"-h, --help", "show help message"});
+                                   const CD &d = "show help message");
+
+  template <class T, class CD>
+  std::shared_ptr<Option> add_flag(const string &opts, const CD &doc) {
+    std::string flag_name = opts;
+    if (flag_name.find('|') < flag_name.size()) {
+      flag_name = flag_name.substr(flag_name.rfind('|'));
+    }
+    if (flag_name.find('=') < flag_name.size()) {
+      flag_name = flag_name.substr(0, flag_name.find('='));
+    }
+    auto taker = [flag_name](const MatchResult &mr) {
+      TakeResult tr;
+      auto v_s = value<T>()(mr.situation);
+      tr.error = get_error(v_s.first);
+      tr.situation = v_s.second;
+      if (!tr.error) {
+        T *ptr = tr.situation.circumstance.flag<T>(flag_name);
+        *ptr = get_value(v_s.first);
+      }
+      return tr;
+    };
+    return this->add_option<string, CD>(opts, taker, doc);
+  }
+
+  template <class T, class CD>
+  std::shared_ptr<Option> add_optional_flag(const string &opts,
+                                            const T &default_value,
+                                            const CD &doc) {
+    std::string flag_name = opts;
+    if (flag_name.find('|') < flag_name.size()) {
+      flag_name = flag_name.substr(flag_name.rfind('|'));
+    }
+    if (flag_name.find('=') < flag_name.size()) {
+      flag_name = flag_name.substr(0, flag_name.find('='));
+    }
+    auto taker = [flag_name, default_value](const MatchResult &mr) {
+      TakeResult tr;
+      auto v_s = optional_value<T>()(mr.situation);
+      tr.situation = v_s.second;
+      T *ptr =
+      tr.situation.circumstance.flag<T>(flag_name);
+      if (get_value(v_s.first)) {
+        *ptr = get_value(get_value(v_s.first));
+      } else {
+        *ptr = default_value;
+      }
+      return tr;
+    };
+    return this->add_option<string, CD>(opts, taker, doc);
+  }
+
+  std::shared_ptr<Option> add_flag(const string &names, const Document &doc) {
+    return add_optional_flag(names, true, doc);
+  }
 
   string help_message(int level, int width);
 

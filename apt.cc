@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
 
     result.clear();
     auto gpr = get_cli.parse(argc, argv);
-    if (less(parse_result.position, gpr.position)) {
+    if (less(parse_result.situation.position, gpr.situation.position)) {
       parse_result = gpr;
       ar.swap(result);
       ac.swap(result_command);
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
 
     result.clear();
     auto cpr = cache_cli.parse(argc, argv);
-    if (less(parse_result.position, cpr.position)) {
+    if (less(parse_result.situation.position, cpr.situation.position)) {
       parse_result = cpr;
       ar.swap(result);
       ac.swap(result_command);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 
   options_parser::many(options_parser::value().apply([&](std::string arg) {
     result.push_back(arg);
-  }))({parse_result.position, parse_result.args});
+  }))(parse_result.situation);
 
   if (print_args) {
     for (auto c : result) {

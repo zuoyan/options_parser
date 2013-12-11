@@ -75,6 +75,19 @@ struct Circumstance {
     return get_or_set("/flag/" + name, default_value);
   }
 
+  string to_str() {
+    if (!holder_) return "{}";
+    std::vector<string> vs;
+    for (const auto& k_v : holder_->key_values) {
+      vs.push_back(k_v.first + ": " + k_v.second.to_str());
+    }
+    for (const auto& t_v : holder_->type_values) {
+      vs.push_back(string("[") + t_v.first->name() + "]" + ": " +
+                   t_v.second.to_str());
+    }
+    return "{" + join(vs, ", ") + "}";
+  }
+
   // Another indirect layer makes Circumstance value semantic and any copy holds
   // the same deeper object.
   struct Holder {

@@ -83,30 +83,32 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   set_circumstance(s.circumstance);
   Situation c = s;
   ParseResult pr;
+
+  auto show_position = [](const Situation &s, size_t limit = 80) {
+    string ret = to_str(s.position.index);
+    if (s.position.off) {
+      ret += "off=" + to_str(s.position.off) + ", ";
+    }
+    auto p = s.position;
+    p.off = 0;
+    if (p.index < s.args.argc()) {
+      ret += " '" + *get_arg(s.args, p).value.get() + "'";
+    } else {
+      ret += " over size=" + to_str(s.args.argc());
+    }
+    while (ret.size() + 6 < limit && ++p.index < s.args.argc()) {
+      auto a = *get_arg(s.args, p).value.get();
+      if (ret.size() + a.size() + 2 >= limit) {
+        a.resize(limit - 5 - ret.size());
+        a += " ...";
+      }
+      ret += " '" + a + "'";
+    }
+    return ret;
+  };
+
   while (c.position.index < c.args.argc()) {
     auto mr_opts = match_results(c);
-    auto show_position = [](const Situation& s, size_t limit = 80) {
-      string ret = to_str(s.position.index);
-      if (s.position.off) {
-        ret += "off=" + to_str(s.position.off) + ", ";
-      }
-      auto p = s.position;
-      p.off = 0;
-      if (p.index < s.args.argc()) {
-        ret += " '" + *get_arg(s.args, p).value.get() + "'";
-      } else {
-        ret += " over size=" + to_str(s.args.argc());
-      }
-      while (ret.size() + 6 < limit && ++p.index < s.args.argc()) {
-        auto a = *get_arg(s.args, p).value.get();
-        if (ret.size() + a.size() + 2 >= limit) {
-          a.resize(limit - 5 - ret.size());
-          a += " ...";
-        }
-        ret += " '" + a + "'";
-      }
-      return ret;
-    };
     if (!mr_opts.size()) {
       pr.situation = c;
       pr.error = "match-none";

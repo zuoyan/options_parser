@@ -33,8 +33,7 @@ struct Taker {
   Taker(const F &func) {
     take_ = [func](const MatchResult &mr) {
       TakeResult tr;
-      auto s = func(mr);
-      tr.situation = s;
+      tr.situation = func(mr);
       return tr;
     };
   }
@@ -49,7 +48,7 @@ struct Taker {
       if (!tr.error) {
         tr.error = from_str<T>(get_value(v_s.first), ptr);
       }
-      tr.situation = mr.situation;
+      tr.situation = v_s.second;
       return tr;
     };
   }

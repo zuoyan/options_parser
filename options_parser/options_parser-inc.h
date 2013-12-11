@@ -56,8 +56,10 @@ size_t Parser::parse_lines(const GetLine &get_line, Maybe<string> *error,
 
 template <class CM, class CD>
 std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
-  auto help_take = [this](const MatchResult &) {
-    std::cout << help_message(0, 78) << std::endl;
+  auto self = *this;
+  auto help_take = [self](const MatchResult &) {
+    auto parser = self;
+    std::cout << parser.help_message(0, 78) << std::endl;
     exit(1);
     TakeResult tr;
     return tr;

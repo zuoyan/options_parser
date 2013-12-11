@@ -57,19 +57,19 @@ state<Either<string>, Situation> match_value(Check check = Check(),
                                              char prefix = '-',
                                              bool strip = false);
 
-template <class Check = always_true>
-state<Either<Maybe<string>>, Situation> optional_value(Check check = Check()) {
+template <class T=string, class Check = always_true>
+state<Either<Maybe<T>>, Situation> optional_value(Check check = Check()) {
   auto func = [check](Situation s) {
-    Either<Maybe<string>> v;
+    Either<Maybe<T>> v;
     if (s.position.off > 0 && check(s)) {
-      auto v_s = value()(s);
+      auto v_s = value<T>()(s);
       s = v_s.second;
       if (v_s.first.value) {
         v.value = v_s.first.value;
       }
     }
     if (!v.value) {
-      v.value = Maybe<string>{};
+      v.value = Maybe<T>{};
     }
     return std::make_pair(v, s);
   };
