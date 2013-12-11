@@ -44,15 +44,14 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
     auto arg = *m_s.first.value.get();
     for (auto const &o : opts) {
       if (o == arg) {
-        mr.priority = exact_priority ? (Priority)exact_priority : MATCH_EXACT;
+        mr.priority = exact_priority ? *exact_priority.get() : MATCH_EXACT;
         return mr;
       }
     }
     if (!has_raw && arg.size()) {
       for (auto const &o : opts) {
         if (arg.size() < o.size() && o.compare(0, arg.size(), arg) == 0) {
-          mr.priority =
-              prefix_priority ? (Priority)prefix_priority : MATCH_PREFIX;
+          mr.priority = prefix_priority ? *prefix_priority.get() : MATCH_PREFIX;
           return mr;
         }
       }

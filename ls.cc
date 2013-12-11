@@ -31,9 +31,10 @@ int main(int argc, char* argv[]) {
                " otherwise: sort by ctime, newest first");
   app.add_flag("C", "list entries by columns");
 
-  app.add_optional_flag("--color=[WHEN]", std::string("always"),
-                        "colorize the output.  WHEN defaults to 'always'"
-                        " or can be 'never' or 'auto'.  More info below");
+  app.add_flag("--color=[WHEN]",
+               "colorize the output.  WHEN defaults to 'always'"
+               " or can be 'never' or 'auto'.  More info below",
+               std::string("always"));
 
   app.add_flag("d|directory",
                "list directory entries instead of contents,"

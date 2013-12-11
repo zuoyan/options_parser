@@ -69,13 +69,14 @@ struct Any {
     template <class U>
     struct has_to_str {
       template <class UU>
-      static auto deduce(UU *) -> decltype(options_parser::to_str(std::declval<UU>()), std::declval<std::true_type>());
+      static auto deduce(UU*)
+          -> decltype(options_parser::to_str(std::declval<UU>()), 0);
 
       template <class UU>
-      static std::false_type deduce(...);
+      static char deduce(...);
 
-      typedef decltype(deduce<U>((U*)0)) type;
-      static constexpr bool value = type::value;
+      static constexpr bool value =
+          std::is_same<decltype(deduce<U>((U*)0)), int>::value;
     };
 
     template <class U>

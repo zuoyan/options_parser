@@ -101,18 +101,18 @@ struct Parser {
   std::shared_ptr<Option> add_option(const Matcher &m, const Taker &t,
                                      const Document &d);
 
-  template <
-      class CM, class CD,
-      typename std::enable_if<std::is_constructible<string, CM>::value &&
-                                  std::is_constructible<string, CD>::value,
-                              int>::type = 0>
+  template <class CM, class CD,
+            typename std::enable_if<
+                std::is_constructible<string, const CM &>::value &&
+                    std::is_constructible<string, const CD &>::value,
+                int>::type = 0>
   std::shared_ptr<Option> add_option(const CM &m, const Taker &t, const CD &d) {
     std::vector<string> opts = split(m, "|");
     bool is_raw = (opts.front().size() && opts.front()[0] == '-');
     std::string pattern;
     if (opts.back().find("=") < opts.back().size()) {
       auto &b = opts.back();
-      pattern = b.substr(b.find('='), 0);
+      pattern = b.substr(b.find('='));
       b = b.substr(0, b.find('='));
     }
     auto opts_prefix = opts;
@@ -128,58 +128,57 @@ struct Parser {
   std::shared_ptr<Option> add_help(const CM &m = CM{"h|help"},
                                    const CD &d = "show help message");
 
-  template <class T, class CD>
-  std::shared_ptr<Option> add_flag(const string &opts, const CD &doc) {
-    std::string flag_name = opts;
-    if (flag_name.find('|') < flag_name.size()) {
-      flag_name = flag_name.substr(flag_name.rfind('|'));
-    }
-    if (flag_name.find('=') < flag_name.size()) {
-      flag_name = flag_name.substr(0, flag_name.find('='));
-    }
-    auto taker = [flag_name](const MatchResult &mr) {
+  template <class T, class CO, class CD>
+  std::shared_ptr<Option> add_flag(const CO &opts, const CD &doc,
+                                   const T &default_value = T()) {
+    MatchFromDoc from_doc(opts);
+    string name = from_doc.name;
+    size_t num_args = from_doc.num_args;
+    bool is_optional = from_doc.is_optional;
+    auto taker = [name, num_args, is_optional, default_value](
+        const MatchResult &mr) {
       TakeResult tr;
-      auto v_s = value<T>()(mr.situation);
-      tr.error = get_error(v_s.first);
-      tr.situation = v_s.second;
-      if (!tr.error) {
-        T *ptr = tr.situation.circumstance.flag<T>(flag_name);
-        *ptr = get_value(v_s.first);
+      if (num_args > 1) {
+        tr.error = "invalid flag " + name;
+        return tr;
       }
-      return tr;
-    };
-    return this->add_option<string, CD>(opts, taker, doc);
-  }
-
-  template <class T, class CD>
-  std::shared_ptr<Option> add_optional_flag(const string &opts,
-                                            const T &default_value,
-                                            const CD &doc) {
-    std::string flag_name = opts;
-    if (flag_name.find('|') < flag_name.size()) {
-      flag_name = flag_name.substr(flag_name.rfind('|'));
-    }
-    if (flag_name.find('=') < flag_name.size()) {
-      flag_name = flag_name.substr(0, flag_name.find('='));
-    }
-    auto taker = [flag_name, default_value](const MatchResult &mr) {
-      TakeResult tr;
-      auto v_s = optional_value<T>()(mr.situation);
-      tr.situation = v_s.second;
-      T *ptr =
-      tr.situation.circumstance.flag<T>(flag_name);
-      if (get_value(v_s.first)) {
-        *ptr = get_value(get_value(v_s.first));
-      } else {
+      if (num_args == 1) {
+        if (is_optional) {
+          auto v_s = optional_value<T>()(mr.situation);
+          tr.situation = v_s.second;
+          T *ptr = tr.situation.circumstance.flag<T>(name);
+          if (get_value(v_s.first)) {
+            *ptr = get_value(get_value(v_s.first));
+          } else {
+            *ptr = default_value;
+          }
+        } else {
+          auto v_s = value<T>()(mr.situation);
+          tr.situation = v_s.second;
+          tr.error = get_error(v_s.first);
+          if (!tr.error) {
+            T *ptr = tr.situation.circumstance.flag<T>(name);
+            *ptr = get_value(v_s.first);
+          }
+        }
+      }
+      if (num_args == 0) {
+        tr.situation = mr.situation;
+        T *ptr = tr.situation.circumstance.flag<T>(name);
         *ptr = default_value;
       }
       return tr;
     };
-    return this->add_option<string, CD>(opts, taker, doc);
+    return add_option(opts, taker, doc);
   }
 
-  std::shared_ptr<Option> add_flag(const string &names, const Document &doc) {
-    return add_optional_flag(names, true, doc);
+  template <class CD>
+  std::shared_ptr<Option> add_flag(const string &opts, const CD &doc) {
+    return add_flag(opts, doc, true);
+  }
+
+  std::shared_ptr<Option> add_flag(const string &opts, const Document &doc) {
+    return add_flag(opts, doc, true);
   }
 
   string help_message(int level, int width);
@@ -212,7 +211,7 @@ struct Parser {
     }
   };
   std::shared_ptr<Holder> holder_;
-};
+    };
 
 // A default global parser, to hold options across libraries/objects.
 Parser &parser();
@@ -236,6 +235,5 @@ std::shared_ptr<Option> define_flag(const string &flag, T *ptr,
                                                options_parser::delay_to_str( \
                                                    &FLAGS_##NAME) +          \
                                                "\n" + DOC})
-
-}  // namespace options_parser
+  }     // namespace options_parser
 #endif  // FILE_20A5A886_FEFC_4145_828E_64203B134265_H

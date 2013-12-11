@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
 
 #include "options_parser/string.h"
 
