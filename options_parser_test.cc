@@ -96,18 +96,15 @@ int main(int argc, char *argv[]) {
                          {"--flag-off", [&]() { flag = false; }, {}}}),
                  "turn flag on or off");
 
-  app.add_option(
-      {{"no-flag", "flag", "flag-on", "flag-off"}, MATCH_EXACT, 0, value()},
-      bundle(
-          {{{"flag", MATCH_EXACT, 0, value()}, [&]() { flag = true; }, {}},
-           {{"no-flag", MATCH_EXACT, 0, value()}, [&]() { flag = true; }, {}},
-           {{"flag-on", MATCH_EXACT, 0, value()}, [&]() { flag = true; }, {}},
-           {{"flag-off", MATCH_EXACT, 0, value()}, [&]() { flag = true; },
-            {}}, }),
-      {"flag, no-flag, flag-on, flag-off", [&]() {
-        return std::string("Current: ") + to_str(flag) +
-               "\nturn flag on or off";
-      }});
+  app.add_option("|no-flag|flag|flag-on|flag-off",
+                 bundle({{"|flag", [&]() { flag = true; }, {}},
+                         {"|no-flag", [&]() { flag = true; }, {}},
+                         {"|flag-on", [&]() { flag = true; }, {}},
+                         {"|flag-off", [&]() { flag = true; }, {}}}),
+                 {"flag, no-flag, flag-on, flag-off", [&]() {
+                   return std::string("Current: ") + to_str(flag) +
+                          "\nturn flag on or off";
+                 }});
 
   app.add_option("--func <str> <str>", [](std::string a, std::string b) {
                                          std::cout << "func got arg " << a

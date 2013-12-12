@@ -19,4 +19,4 @@ TARGET_LINK_LIBRARIES(ls options_parser)
 
 ADD_EXECUTABLE(maybe_test maybe_test.cc)
 
-ADD_EXECUTABLE(match_from_doc_test match_from_doc_test.cc)
+ADD_EXECUTABLE(match_from_description_test match_from_description_test.cc)

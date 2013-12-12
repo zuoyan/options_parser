@@ -16,19 +16,18 @@ int main(int argc, char *argv[]) {
   std::string result_command;
   std::vector<std::string> result;
 
-  common_options.push_back(
-      cli.add_option("c", [&](std::string a) {
+  common_options.push_back(cli.add_option("-c=?", [&](std::string a) {
           result.push_back("-c");
           result.push_back(a);
-        },
-        {"-c=?", "Read this configuration file."}));
+                                                  },
+                                          "Read this configuration file."));
 
   common_options.push_back(cli.add_option(
-      "o", [&](std::string a) {
+      "-o=?", [&](std::string a) {
         result.push_back("-o");
         result.push_back(a);
-      },
-      {"-o=?", "Set an arbitrary configuration option, eg -o dir::cache=/tmp"}));
+              },
+      "Set an arbitrary configuration option, eg -o dir::cache=/tmp"));
 
   options_parser::Parser get_cli("apt-get Commands:", "\n");
   cli.add_parser(get_cli);
@@ -52,54 +51,45 @@ int main(int argc, char *argv[]) {
 
   for (auto c_h : get_commands) {
     auto c = c_h.first;
-    get_cli.add_option({c, {}, {}, options_parser::value()}, [&, c]() {
-                         result_command = "apt-get";
-                         result.push_back(c);
-                         cli.toggle();
-                         get_cli.toggle();
-                                                             },
-                       {c, c_h.second});
+    get_cli.add_option("|" + c, [&, c]() {
+                                  result_command = "apt-get";
+                                  result.push_back(c);
+                                  cli.toggle();
+                                  get_cli.toggle();
+                                },
+                       c_h.second);
   }
 
-  get_cli.add_option("q", [&]() {
-      result.push_back("-q");
-    }, {"-q", "Loggable output - no progress indicator"});
+  get_cli.add_option("-q", [&]() { result.push_back("-q"); },
+                     "Loggable output - no progress indicator");
 
-  get_cli.add_option("qq", [&]() {
-      result.push_back("-qq");
-    }, {"-qq", "No output except for errors"});
+  get_cli.add_option("|-qq", [&]() { result.push_back("-qq"); },
+                     "No output except for errors");
 
-  get_cli.add_option("d", [&]() {
-      result.push_back("-d");
-    }, {"-d", "Download only - do NOT install or unpack archives"});
+  get_cli.add_option("-d", [&]() { result.push_back("-d"); },
+                     "Download only - do NOT install or unpack archives");
 
-  get_cli.add_option("s", [&]() {
-      result.push_back("-s");
-    }, {"-s", "No-act. Perform ordering simulation"});
+  get_cli.add_option("-s", [&]() { result.push_back("-s"); },
+                     "No-act. Perform ordering simulation");
 
-  get_cli.add_option("y", [&]() {
-      result.push_back("-y");
-    }, {"-y", "Assume Yes to all queries and do not prompt"});
+  get_cli.add_option("-y", [&]() { result.push_back("-y"); },
+                     "Assume Yes to all queries and do not prompt");
 
-  get_cli.add_option("f", [&]() {
-      result.push_back("-f");
-    }, {"-f", "Attempt to correct a system with broken dependencies in place"});
+  get_cli.add_option(
+      "-f", [&]() { result.push_back("-f"); },
+      "Attempt to correct a system with broken dependencies in place");
 
-  get_cli.add_option("m", [&]() {
-      result.push_back("-m");
-    }, {"-m", "Attempt to continue if archives are unlocatable"});
+  get_cli.add_option("-m", [&]() { result.push_back("-m"); },
+                     "Attempt to continue if archives are unlocatable");
 
-  get_cli.add_option("u", [&]() {
-      result.push_back("-u");
-    }, {"-u", "Show a list of upgraded packages as well"});
+  get_cli.add_option("-u", [&]() { result.push_back("-u"); },
+                     "Show a list of upgraded packages as well");
 
-  get_cli.add_option("b", [&]() {
-      result.push_back("-b");
-    }, {"-b", "Build the source package after fetching it"});
+  get_cli.add_option("-b", [&]() { result.push_back("-b"); },
+                     "Build the source package after fetching it");
 
-  get_cli.add_option("V", [&]() {
-      result.push_back("-V");
-    }, {"-V", "Show verbose version numbers"});
+  get_cli.add_option("-V", [&]() { result.push_back("-V"); },
+                     "Show verbose version numbers");
 
   options_parser::Parser cache_cli("apt-cache Commands:", "\n");
   cli.add_parser(cache_cli);
@@ -123,33 +113,32 @@ int main(int argc, char *argv[]) {
 
   for (auto c_h : cache_commands) {
     auto c = c_h.first;
-    cache_cli.add_option({c, {}, {}, options_parser::value()},
-                         [&, c]() {
+    cache_cli.add_option("|" + c, [&, c]() {
                            result_command = "apt-cache";
                            result.push_back(c);
                            cli.toggle();
                            cache_cli.toggle();
-                         },
-                         {c, c_h.second});
+                                  },
+                         c_h.second);
   }
 
-  cache_cli.add_option("p", [&](std::string a) {
+  cache_cli.add_option("-p=?", [&](std::string a) {
       result.push_back("-p");
       result.push_back(a);
-    }, {"-p=?", "The package cache."});
+    }, "The package cache.");
 
-  cache_cli.add_option("s", [&](std::string a) {
-      result.push_back("-s");
-      result.push_back(a);
-    }, {"-s=?", "The source cache."});
+  cache_cli.add_option("-s=?", [&](std::string a) {
+                                 result.push_back("-s");
+                                 result.push_back(a);
+                               },
+                       "The source cache.");
 
-  cache_cli.add_option("q", [&]() {
+  cache_cli.add_option("-q", [&]() {
       result.push_back("-q");
-    }, {"-q", "Disable progress indicator."});
+    }, "Disable progress indicator.");
 
-  cache_cli.add_option("i", [&]() {
-      result.push_back("-i");
-    }, {"-i", "Show only important deps for the unmet command."});
+  cache_cli.add_option("-i", [&]() { result.push_back("-i"); },
+                       "Show only important deps for the unmet command.");
 
   for (auto o : common_options) {
     get_cli.add_option(*o);

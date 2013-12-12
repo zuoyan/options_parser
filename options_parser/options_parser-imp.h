@@ -87,7 +87,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   auto show_position = [](const Situation &s, size_t limit = 80) {
     string ret = to_str(s.position.index);
     if (s.position.off) {
-      ret += "off=" + to_str(s.position.off) + ", ";
+      ret += " off=" + to_str(s.position.off) + ", ";
     }
     auto p = s.position;
     p.off = 0;

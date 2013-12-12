@@ -18,8 +18,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
 OPTIONS_PARSER_IMP Matcher::Matcher(
     const MatchFromDescription &mfd,
     Maybe<state<Either<string>, Situation>> arg_getter) {
-  match_ = [mfd, exact_priority, prefix_priority, arg_getter](
-      const Situation &s) {
+  match_ = [mfd, arg_getter](const Situation &s) {
     std::pair<Either<string>, Situation> m_s;
     if (arg_getter) {
       m_s = (*arg_getter.get())(s);
@@ -27,7 +26,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
       if (mfd.is_raw) {
         m_s = value()(s);
       } else {
-        m_s = match_value(always_true{}, '-')(s);
+        m_s = match_value(always_true{}, '-', true)(s);
       }
     }
     MatchResult mr;
@@ -45,24 +44,24 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
       first_arg = get_value(value()(t).first.value);
     }
     if (mfd.is_raw || (s.position.off == 0 && starts_with(first_arg, "--"))) {
-      for (auto const &o : mfs.opts) {
+      for (const string &o : mfd.opts) {
         if (o == arg) {
-          mr.priority = exact_priority ? *exact_priority.get() : MATCH_EXACT;
+          mr.priority = MATCH_EXACT;
           return mr;
         }
       }
     }
     if (mfd.is_raw) return mr;
     if (arg.size() && s.position.off == 0 && starts_with(first_arg, "--")) {
-      for (auto const &o : opts) {
+      for (const string &o : mfd.opts) {
         if (arg.size() < o.size() && o.compare(0, arg.size(), arg) == 0) {
-          mr.priority = prefix_priority ? *prefix_priority.get() : MATCH_PREFIX;
+          mr.priority = MATCH_PREFIX;
           return mr;
         }
       }
     }
     if (!arg_getter && arg.size() && !starts_with(first_arg, "--")) {
-      for (auto const &o : opts) {
+      for (const string &o : mfd.opts) {
         size_t off = 0;
         while (off < o.size() && o[off] == '-') ++off;
         if (o.size() != off + 1) continue;

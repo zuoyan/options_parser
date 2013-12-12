@@ -39,7 +39,7 @@ struct MatchFromDescription {
     opts = split(doc, "|");
     if (opts.size()) name = opts.back();
     doc.clear();
-    for (auto o : doc) {
+    for (auto o : opts) {
       if (doc.size()) doc += ", ";
       doc += (o.size() == 1 ? "-" : "--") + o;
     }

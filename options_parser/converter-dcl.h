@@ -22,7 +22,7 @@ bool to_stream(std::ostream &os, const T &p);
 template <class T, class Tag = void>
 struct from_str_impl;
 
-inline Maybe<string> from_str(const string &s, string *p);
+Maybe<string> from_str(const string &s, string *p);
 
 template <class T>
 Maybe<string> from_str(const string &s, T *p);

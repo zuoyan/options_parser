@@ -122,7 +122,7 @@ struct Parser {
     auto taker = [mfd, default_value](const MatchResult &mr) {
       TakeResult tr;
       if (mfd.num_args > 1) {
-        tr.error = "invalid flag " + name;
+        tr.error = "invalid flag " + mfd.name;
         return tr;
       }
       if (mfd.num_args == 1) {
