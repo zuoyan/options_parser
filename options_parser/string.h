@@ -11,10 +11,11 @@ inline bool starts_with(const string &s, const string&prefix) {
   return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
 }
 
-inline std::vector<string> split(const string &s, const string &sep) {
+inline std::vector<string> split(const string &s, const string &sep,
+                                 size_t limit = -1) {
   std::vector<string> fields;
   size_t off = 0;
-  while (off < s.size()) {
+  while (off < s.size() && fields.size() <= limit) {
     auto n = s.find(sep, off);
     if (n >= s.size()) break;
     fields.push_back(s.substr(off, n - off));
