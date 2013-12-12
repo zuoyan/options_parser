@@ -223,6 +223,20 @@ OPTIONS_PARSER_IMP std::shared_ptr<Option> Parser::add_option(
   return add_option(opt);
 }
 
+OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_file(
+    const string &fn) {
+  std::ifstream ifs(fn);
+  auto get_line = [&]()->Maybe<string> {
+    string line;
+    std::getline(ifs, line);
+    if (ifs.good()) {
+      return line;
+    }
+    return nothing;
+  };
+  return add_flags(get_line);
+}
+
 OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {
   auto docs = documents(level);
   std::vector<string> lines;

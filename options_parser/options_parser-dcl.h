@@ -172,6 +172,73 @@ struct Parser {
     return add_flag<string>(opts, doc, string());
   }
 
+  template <class GetLine>
+  std::vector<std::shared_ptr<Option>> add_flags(const GetLine &get_line) {
+    std::vector<std::shared_ptr<Option>> ret;
+    std::string line;
+    bool is_end = false;
+    while (true) {
+      Maybe<std::string> more;
+      std::string more_line;
+      while (!is_end) {
+        more = get_line();
+        is_end = !more;
+        if (is_end) break;
+        more_line = *more.get();
+        if (starts_with(more_line, "    ")) {
+          line += " " + strip(more_line);
+          more_line = "";
+        } else {
+          break;
+        }
+      }
+      line = strip(line);
+      if (!line.size() && !is_end) break;
+      if (!line.size()) continue;
+      string doc, rest = line;
+      line = more_line;
+      if (rest.find("  ") >= rest.size()) {
+        size_t off = 0;
+        while (off < rest.size()) {
+          if (rest[off] == '-') {
+            while (off < rest.size() && !isspace(rest[off])) ++off;
+            continue;
+          }
+          if (rest[off] == '<') {
+            while (off < rest.size() && rest[off] != '>') ++off;
+            if (off < rest.size()) ++off;
+            continue;
+          }
+          if (isspace(rest[off])) {
+            size_t n = off;
+            while (n < rest.size() && isspace(rest[n])) ++n;
+            if (n < rest.size() && isupper(rest[n])
+                && (n + 1 == rest.size()
+                    || !islower(rest[n]))) {
+              off = n;
+              while (off < rest.size() && !isspace(rest[off])) ++off;
+              continue;
+            }
+            off = n;
+            break;
+          }
+        }
+        doc = rest.substr(0, off);
+        rest = rest.substr(off);
+      } else {
+        auto off = rest.find("  ");
+        doc = rest.substr(0, off);
+        rest = rest.substr(off);
+      }
+      rest = strip(rest);
+      doc = strip(doc);
+      ret.push_back(add_flag(doc, rest));
+    }
+    return ret;
+  }
+
+  std::vector<std::shared_ptr<Option>> add_flags_file(const string &fn);
+
   string help_message(int level, int width);
 
   void set_circumstance(const Circumstance &circumstance) {
