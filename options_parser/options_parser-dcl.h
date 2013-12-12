@@ -157,11 +157,19 @@ struct Parser {
 
   template <class CD>
   std::shared_ptr<Option> add_flag(const string &opts, const CD &doc) {
-    return add_flag(opts, doc, true);
+    MatchFromDescription mfd(opts);
+    if (mfd.num_args == 0) {
+      return add_flag(opts, doc, true);
+    }
+    return add_flag<string>(opts, doc, string());
   }
 
   std::shared_ptr<Option> add_flag(const string &opts, const Document &doc) {
-    return add_flag(opts, doc, true);
+    MatchFromDescription mfd(opts);
+    if (mfd.num_args == 0) {
+      return add_flag(opts, doc, true);
+    }
+    return add_flag<string>(opts, doc, string());
   }
 
   string help_message(int level, int width);

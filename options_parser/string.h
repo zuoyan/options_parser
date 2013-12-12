@@ -15,7 +15,7 @@ inline std::vector<string> split(const string &s, const string &sep,
                                  size_t limit = -1) {
   std::vector<string> fields;
   size_t off = 0;
-  while (off < s.size() && fields.size() <= limit) {
+  while (off < s.size() && fields.size() < limit) {
     auto n = s.find(sep, off);
     if (n >= s.size()) break;
     fields.push_back(s.substr(off, n - off));
@@ -89,6 +89,17 @@ inline std::vector<string> format_str(const string &s, int width) {
     }
   }
   return ret;
+}
+
+inline string strip(const string &s) {
+  size_t l = 0, r = s.size();
+  while (l < r && isspace(s[l])) {
+    ++l;
+  }
+  while (l < r && isspace(s[r - 1])) {
+    --r;
+  }
+  return s.substr(l, r - l);
 }
 
 }  // namespace options_parser

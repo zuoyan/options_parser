@@ -42,6 +42,10 @@ int main(int argc, char *argv[]) {
       "recusandae. Itaque earum rerum hic tenetur a sapiente delectus, "
       "ut aut reiciendis voluptatibus maiores alias consequatur aut "
       "perferendis doloribus asperiores repellat…");
+  Circumstance circumstance;
+  circumstance.init();
+  app.set_circumstance(circumstance);
+
   app.add_parser(options_parser::parser());
 
   app.add_option("--config-file", [&](const std::string &fn) {
@@ -142,6 +146,45 @@ int main(int argc, char *argv[]) {
                  }),
                  "all following integers");
 
+  app.add_option("--flag-file FILE", [&](std::string fn) {
+                   std::ifstream ifs(fn);
+                   std::string line;
+                   while (true) {
+                     std::string more;
+                     while (true) {
+                       std::getline(ifs, more);
+                       if (!ifs.good()) break;
+                       more = options_parser::strip(more);
+                       if (more.size() && more[0] == '-') break;
+                       line += " " + more;
+                       more = "";
+                     }
+                     if (!line.size() && !ifs.good()) break;
+                     if (!line.size()) continue;
+                     std::string sep = "  ";
+                     auto vs = options_parser::split(line, sep, 1);
+                     line = more;
+                     if (vs.size() == 1) {
+                       vs = options_parser::split(vs[0], " ", 1);
+                       if (vs.size() == 2) {
+                         while (vs[1].size() && vs[1][0] == '-') {
+                           auto svs = options_parser::split(vs[1], " ", 1);
+                           vs[0] = " " + svs[0];
+                           vs[1] = "";
+                           if (svs.size() > 1) vs[1] = svs[1];
+                         }
+                       }
+                     }
+                     if (vs.size() != 2) {
+                       std::cerr << "invalid line with: "
+                                 << options_parser::join(vs, "|") << std::endl;
+                       continue;
+                     }
+                     app.add_flag(vs[0], options_parser::strip(vs[1]));
+                   }
+                                     },
+                 "Add flag according help message");
+
   auto parse_result = app.parse(argc, argv);
 
   if (parse_result.error) {
@@ -155,4 +198,5 @@ int main(int argc, char *argv[]) {
   std::cerr << "int_value " << int_value << std::endl;
   std::cerr << "flag " << flag << std::endl;
   std::cerr << "flag_int " << FLAGS_flag_int << std::endl;
+  std::cout << "circumstance:" << circumstance.to_str() << std::endl;
 }
