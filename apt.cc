@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::shared_ptr<options_parser::Option>> common_options;
   common_options.push_back(cli.add_option(
-      "print-args", [&]() { print_args = true; }, {}));
+      "print-args", [&]() { print_args = true; }, "print args and exit"));
   std::string result_command;
   std::vector<std::string> result;
 

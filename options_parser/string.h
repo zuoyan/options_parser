@@ -7,6 +7,10 @@
 namespace options_parser {
 typedef std::string string;
 
+inline bool starts_with(const string &s, const string&prefix) {
+  return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
+}
+
 inline std::vector<string> split(const string &s, const string &sep) {
   std::vector<string> fields;
   size_t off = 0;

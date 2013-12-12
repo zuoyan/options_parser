@@ -120,8 +120,8 @@ int main(int argc, char* argv[]) {
   app.add_flag("N|literal", "print raw entry names (don't treat e.g. control"
                " characters specially)");
   app.add_flag("o", "like -l, but do not list group information");
-  app.add_flag("p", {"-p, --indicator-style=slash",
-                     "append / indicator to directories"});
+  app.add_flag("-p, --indicator-style=slash",
+               "append / indicator to directories");
 
   app.add_flag("q|hide-control-chars", "print ? instead of non graphic characters");
 
@@ -155,9 +155,9 @@ int main(int argc, char* argv[]) {
                             " takes effect only outside the POSIX locale");
   app.add_option("-t",
                  [&]() { *circumstance.flag<std::string>("sort") = "time"; },
-                 {"-t", "sort by modification time, newest first"});
+                 "sort by modification time, newest first");
 
-  app.add_flag<size_t>("-T|--tabsize=COLS",
+  app.add_flag<size_t>("-T, --tabsize=COLS",
                        "assume tab stops at each COLS instead of 8");
   app.add_flag("u",
                "with -lt: sort by, and show, access time, "
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
       [&]() { *circumstance.flag<std::string>("sort") = "natural-number"; },
       "natural sort of (version) numbers within text");
 
-  app.add_flag<size_t>("w|width=COLS",
+  app.add_flag<size_t>("-w, --width=COLS",
                        "assume screen width instead of current value");
 
   app.add_flag("x", "list entries by lines instead of by columns");
@@ -188,8 +188,9 @@ int main(int argc, char* argv[]) {
   app.add_flag("1", "list one file per line");
 
   app.add_option("--version", []() {
-                                std::cout << "ls (GNU coreutils) 8.13 ..."
-                                          << std::endl;
+                                std::cout
+                                    << "ls, demo of options_parser 0.01 ..."
+                                    << std::endl;
                                 exit(1);
                               },
                  "output version information and exit");

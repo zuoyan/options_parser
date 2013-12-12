@@ -77,7 +77,9 @@ struct MatchFromDoc {
           while (off < d.size() && d[off] != '>') {
             ++off;
           }
+          if (off < d.size()) ++off;
           ++n;
+          continue;
         }
         if (d[off] == ',') {
           ++off;
@@ -105,12 +107,14 @@ struct MatchFromDoc {
       while (n < d.size() && d[n] == '-') ++n;
       size_t t = n + 1;
       if (n - off > 1) {
-        while (t < d.size() && !isspace(d[t]) && d[t] != '=') ++t;
+        while (t < d.size() && !isspace(d[t]) && d[t] != '=' && d[t] != '[') {
+          ++t;
+        }
       }
       opts.emplace_back(d.data() + n, d.data() + t);
       off = t;
-      auto na = count_args(off);
-      if (na < num_args) num_args = na;
+      size_t na = count_args(off);
+      if (na > num_args) num_args = na;
     }
     if (opts.size()) name = opts.back();
   }

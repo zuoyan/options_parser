@@ -48,12 +48,40 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
         return mr;
       }
     }
-    if (!has_raw && arg.size()) {
+    string first_arg;
+    {
+      auto t = s;
+      t.position.off = 0;
+      first_arg = get_value(value()(t).first.value);
+    }
+    if (!has_raw && arg.size() && s.position.off == 0 &&
+        starts_with(first_arg, "--")) {
       for (auto const &o : opts) {
         if (arg.size() < o.size() && o.compare(0, arg.size(), arg) == 0) {
           mr.priority = prefix_priority ? *prefix_priority.get() : MATCH_PREFIX;
           return mr;
         }
+      }
+    }
+    if (!arg_getter && arg.size() && !starts_with(first_arg, "--")) {
+      for (auto const &o : opts) {
+        size_t off = 0;
+        while (off < o.size() && o[off] == '-') ++off;
+        if (o.size() != off + 1) continue;
+        if (arg[0] != o.back()) continue;
+        mr.priority = MATCH_EXACT;
+        off = s.position.off;
+        while (first_arg[off] == '-') ++off;
+        ++off;
+        if (off < first_arg.size()) {
+          mr.situation = s;
+          if (first_arg[off] == '=') {
+            mr.situation.position.off = off + 1;
+          } else {
+            mr.situation.position.off = off;
+          }
+        }
+        return mr;
       }
     }
     return mr;

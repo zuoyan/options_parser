@@ -107,25 +107,12 @@ struct Parser {
                     std::is_constructible<string, const CD &>::value,
                 int>::type = 0>
   std::shared_ptr<Option> add_option(const CM &m, const Taker &t, const CD &d) {
-    std::vector<string> opts = split(m, "|");
-    bool is_raw = (opts.front().size() && opts.front()[0] == '-');
-    std::string pattern;
-    if (opts.back().find("=") < opts.back().size()) {
-      auto &b = opts.back();
-      pattern = b.substr(b.find('='));
-      b = b.substr(0, b.find('='));
-    }
-    auto opts_prefix = opts;
-    if (!is_raw) {
-      for (auto & o : opts_prefix) {
-        o = (o.size() == 1 ? "-" : "--") + o;
-      }
-    }
-    return add_option(Matcher(opts), t, {join(opts_prefix, ", ") + pattern, d});
+    MatchFromDoc mfd(m);
+    return add_option(Matcher(mfd.opts), t, {mfd.doc, d});
   }
 
-  template <class CM = Matcher, class CD = Document>
-  std::shared_ptr<Option> add_help(const CM &m = CM{"h|help"},
+  template <class CM = string, class CD = string>
+  std::shared_ptr<Option> add_help(const CM &m = "-h, --help",
                                    const CD &d = "show help message");
 
   template <class T, class CO, class CD>
@@ -211,7 +198,7 @@ struct Parser {
     }
   };
   std::shared_ptr<Holder> holder_;
-    };
+};
 
 // A default global parser, to hold options across libraries/objects.
 Parser &parser();
@@ -235,5 +222,5 @@ std::shared_ptr<Option> define_flag(const string &flag, T *ptr,
                                                options_parser::delay_to_str( \
                                                    &FLAGS_##NAME) +          \
                                                "\n" + DOC})
-  }     // namespace options_parser
+}  // namespace options_parser
 #endif  // FILE_20A5A886_FEFC_4145_828E_64203B134265_H
