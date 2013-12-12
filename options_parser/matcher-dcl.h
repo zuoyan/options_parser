@@ -30,34 +30,6 @@ struct MatchFromDoc {
   MatchFromDoc(const string &d, bool strip = true) : doc(d) {
     num_args = 0;
     is_optional = false;
-    bool with_prefix = false;
-    if (d.find('|') < d.size() || d.find_first_of(" ,<>=") >= d.size()) {
-      opts = split(d, "|");
-      for (string &o : opts) {
-        size_t off = 0;
-        while (off < o.size() && o[off] == '-') ++off;
-        if (off > 0) {
-          with_prefix = true;
-        }
-      }
-      if (with_prefix) {
-        doc = join(opts, ", ");
-        if (opts.size()) {
-          name = opts.back();
-          size_t off = 0;
-          while (off < name.size() && name[off] == '-') ++off;
-          name = name.substr(off);
-        }
-      } else {
-        doc.clear();
-        for (const string &o : opts) {
-          if (doc.size()) doc += ", ";
-          doc += (o.size() == 1 ? "-" : "--") + o;
-        }
-        if (opts.size()) name = opts.back();
-      }
-      return;
-    }
     size_t off = 0;
     auto count_args = [&](size_t &off) {
       while (off < d.size() && isspace(d[off])) ++off;

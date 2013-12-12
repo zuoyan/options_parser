@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
       "perferendis doloribus asperiores repellat…");
   app.add_parser(options_parser::parser());
 
-  app.add_option("config-file", [&](const std::string &fn) {
+  app.add_option("--config-file", [&](const std::string &fn) {
       options_parser::Maybe<std::string> error, error_full;
       app.parse_file(fn, &error, &error_full);
       return error_full ? *error_full.get() : "";
@@ -68,34 +68,33 @@ int main(int argc, char *argv[]) {
                  {"--", "close sub command"})->help_level = 10000;
   sub.add_help();
 
-  sub.add_option(
-      "sub-ab", [](std::string a, std::string b) {
-                  std::cout << "sub-ab got arg " << a << " and " << b
-                            << std::endl;
-                },
-      {"--sub-ab <str> <str>", "print and eat the following two arguments"});
+  sub.add_option("--sub-ab <str> <str>", [](std::string a, std::string b) {
+                                           std::cout << "sub-ab got arg " << a
+                                                     << " and " << b
+                                                     << std::endl;
+                                         },
+                 "print and eat the following two arguments");
 
-  sub.add_option("a", [](std::string a) {
-                        std::cout << "a in sub got arg " << a << std::endl;
-                      },
-                 {"--a <str>", "print and eat the following argument"});
+  sub.add_option(
+      "-a <str>",
+      [](std::string a) { std::cout << "a in sub got arg " << a << std::endl; },
+      "print and eat the following argument");
 
   int int_value = 13;
   bool flag = false;
 
   app.add_help();
 
-  app.add_option("int", &int_value,
-                 {"--int <int>", "Current: " + delay_to_str(&int_value) +
-                                     "\nSet integer value."});
-
   app.add_option(
-      "no-flag|flag|flag-on|flag-off",
-      bundle({{"flag", [&]() { flag = true; }, {}},
-              {"no-flag", [&]() { flag = false; }, {}},
-              {"flag-on", [&]() { flag = true; }, {}},
-              {"flag-off", [&]() { flag = false; }, {}}}),
-      {"--flag, --no-flag, --flag-on, --flag-off", "turn flag on or off"});
+      "--int <int>", &int_value,
+      "Current: " + delay_to_str(&int_value) + "\nSet integer value.");
+
+  app.add_option("--no-flag, --flag, --flag-on, --flag-off",
+                 bundle({{"--flag", [&]() { flag = true; }, {}},
+                         {"--no-flag", [&]() { flag = false; }, {}},
+                         {"--flag-on", [&]() { flag = true; }, {}},
+                         {"--flag-off", [&]() { flag = false; }, {}}}),
+                 "turn flag on or off");
 
   app.add_option(
       {{"no-flag", "flag", "flag-on", "flag-off"}, MATCH_EXACT, 0, value()},
@@ -110,38 +109,41 @@ int main(int argc, char *argv[]) {
                "\nturn flag on or off";
       }});
 
-  app.add_option("func", [](std::string a, std::string b) {
-                           std::cout << "func got arg " << a << " and " << b
-                                     << std::endl;
-                         },
-                 {"--func <str> <str>", "Take and print the two arguments"});
+  app.add_option("--func <str> <str>", [](std::string a, std::string b) {
+                                         std::cout << "func got arg " << a
+                                                   << " and " << b << std::endl;
+                                       },
+                 "Take and print the two arguments");
 
-  app.add_option("func-si", [](std::string a, int b) {
-                              std::cout << "func-si got arg " << a << " and "
-                                        << b << std::endl;
-                            },
-                 {"--func-si <str> <int>", "Take and print the two arguments"});
+  app.add_option("--func-si <str> <int>", [](std::string a, int b) {
+                                            std::cout << "func-si got arg " << a
+                                                      << " and " << b
+                                                      << std::endl;
+                                          },
+                 "Take and print the two arguments");
 
-  app.add_option("value-ab", gather(value(), value()).apply(
-                                 check_invoke([](std::string a, std::string b) {
-                                   std::cerr << "value-ab a " << a << std::endl;
-                                   std::cerr << "value-ab b " << b << std::endl;
-                                 })),
-                 {"--value-ab <A> <B>", "take and print the two arguments"});
+  app.add_option("--value-ab A B",
+                 gather(value(), value())
+                     .apply(check_invoke([](std::string a, std::string b) {
+                        std::cerr << "value-ab a " << a << std::endl;
+                        std::cerr << "value-ab b " << b << std::endl;
+                      })),
+                 "take and print the two arguments");
 
-  app.add_option("one-int", value<int>().apply([](int v) {
-                              std::cerr << "one-int " << v << std::endl;
-                            }),
-                 {"--one-int <integer>", "one integer"});
+  app.add_option("--one-int <integer>", value<int>().apply([](int v) {
+                                          std::cerr << "one-int " << v
+                                                    << std::endl;
+                                        }),
+                 "one integer");
 
-  app.add_option("--all-int",
+  app.add_option("--all-int <integer>...",
                  many(value<int>(), 1, 4).apply([](std::vector<int> vs) {
                    for (size_t i = 0; i < vs.size(); ++i) {
                      std::cerr << "all-int " << i << " value " << vs[i]
                                << std::endl;
                    }
                  }),
-                 {"--all-int <integer>...", "all following integers"});
+                 "all following integers");
 
   auto parse_result = app.parse(argc, argv);
 
