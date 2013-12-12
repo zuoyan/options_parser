@@ -229,12 +229,12 @@ OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_file(
   auto get_line = [&]()->Maybe<string> {
     string line;
     std::getline(ifs, line);
-    if (ifs.good()) {
+    if (!ifs.fail()) {
       return line;
     }
     return nothing;
   };
-  return add_flags(get_line);
+  return add_flags_lines(get_line);
 }
 
 OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {

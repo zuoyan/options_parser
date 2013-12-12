@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <fstream>
+#include <iostream>
 
 #include "options_parser/arguments-dcl.h"
 #include "options_parser/document-dcl.h"
@@ -173,62 +174,67 @@ struct Parser {
   }
 
   template <class GetLine>
-  std::vector<std::shared_ptr<Option>> add_flags(const GetLine &get_line) {
+  std::vector<std::shared_ptr<Option>> add_flags_lines(
+      const GetLine &get_line) {
     std::vector<std::shared_ptr<Option>> ret;
-    std::string line;
+    std::string next_line;
     bool is_end = false;
-    while (true) {
-      Maybe<std::string> more;
-      std::string more_line;
+    auto get_flag_line = [&]() {
+      Maybe<std::string> may_next;
+      std::string line;
+      std::swap(line, next_line);
       while (!is_end) {
-        more = get_line();
-        is_end = !more;
+        may_next = get_line();
+        is_end = !may_next;
         if (is_end) break;
-        more_line = *more.get();
-        if (starts_with(more_line, "    ")) {
-          line += " " + strip(more_line);
-          more_line = "";
+        next_line = *may_next.get();
+        if (starts_with(next_line, string((size_t)8, ' '))) {
+          line += "  " + strip(next_line);
+          next_line = "";
         } else {
           break;
         }
       }
       line = strip(line);
-      if (!line.size() && !is_end) break;
+      return line;
+    };
+    while (true) {
+      string line = get_flag_line();
+      if (!line.size() && is_end) break;
       if (!line.size()) continue;
-      string doc, rest = line;
-      line = more_line;
-      if (rest.find("  ") >= rest.size()) {
+      string doc, rest;
+      if (line.find("  ") >= line.size()) {
         size_t off = 0;
-        while (off < rest.size()) {
-          if (rest[off] == '-') {
-            while (off < rest.size() && !isspace(rest[off])) ++off;
+        while (off < line.size()) {
+          if (line[off] == '-') {
+            while (off < line.size() && !isspace(line[off])) ++off;
             continue;
           }
-          if (rest[off] == '<') {
-            while (off < rest.size() && rest[off] != '>') ++off;
-            if (off < rest.size()) ++off;
+          if (line[off] == '<') {
+            while (off < line.size() && line[off] != '>') ++off;
+            if (off < line.size()) ++off;
             continue;
           }
-          if (isspace(rest[off])) {
+          if (isspace(line[off])) {
             size_t n = off;
-            while (n < rest.size() && isspace(rest[n])) ++n;
-            if (n < rest.size() && isupper(rest[n])
-                && (n + 1 == rest.size()
-                    || !islower(rest[n]))) {
+            while (n < line.size() && isspace(line[n])) ++n;
+            if (n < line.size() && isupper(line[n])
+                && (n + 1 == line.size()
+                    || !islower(line[n]))) {
               off = n;
-              while (off < rest.size() && !isspace(rest[off])) ++off;
+              while (off < line.size() && !isspace(line[off])) ++off;
               continue;
             }
             off = n;
             break;
           }
         }
-        doc = rest.substr(0, off);
-        rest = rest.substr(off);
+        doc = line.substr(0, off);
+        rest = line.substr(off);
       } else {
-        auto off = rest.find("  ");
-        doc = rest.substr(0, off);
-        rest = rest.substr(off);
+        auto off = line.find("  ");
+        doc = line.substr(0, off);
+        rest = line.substr(off);
       }
       rest = strip(rest);
       doc = strip(doc);
