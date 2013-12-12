@@ -107,8 +107,8 @@ struct Parser {
                     std::is_constructible<string, const CD &>::value,
                 int>::type = 0>
   std::shared_ptr<Option> add_option(const CM &m, const Taker &t, const CD &d) {
-    MatchFromDoc mfd(m);
-    return add_option(Matcher(mfd.opts), t, {mfd.doc, d});
+    MatchFromDescription mfd(m);
+    return add_option(Matcher(mfd), t, {mfd.doc, d});
   }
 
   template <class CM = string, class CD = string>
@@ -118,22 +118,18 @@ struct Parser {
   template <class T, class CO, class CD>
   std::shared_ptr<Option> add_flag(const CO &opts, const CD &doc,
                                    const T &default_value = T()) {
-    MatchFromDoc from_doc(opts);
-    string name = from_doc.name;
-    size_t num_args = from_doc.num_args;
-    bool is_optional = from_doc.is_optional;
-    auto taker = [name, num_args, is_optional, default_value](
-        const MatchResult &mr) {
+    MatchFromDescription mfd(opts);
+    auto taker = [mfd, default_value](const MatchResult &mr) {
       TakeResult tr;
-      if (num_args > 1) {
+      if (mfd.num_args > 1) {
         tr.error = "invalid flag " + name;
         return tr;
       }
-      if (num_args == 1) {
-        if (is_optional) {
+      if (mfd.num_args == 1) {
+        if (mfd.is_arg_optional) {
           auto v_s = optional_value<T>()(mr.situation);
           tr.situation = v_s.second;
-          T *ptr = tr.situation.circumstance.flag<T>(name);
+          T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
           if (get_value(v_s.first)) {
             *ptr = get_value(get_value(v_s.first));
           } else {
@@ -144,14 +140,14 @@ struct Parser {
           tr.situation = v_s.second;
           tr.error = get_error(v_s.first);
           if (!tr.error) {
-            T *ptr = tr.situation.circumstance.flag<T>(name);
+            T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
             *ptr = get_value(v_s.first);
           }
         }
       }
-      if (num_args == 0) {
+      if (mfd.num_args == 0) {
         tr.situation = mr.situation;
-        T *ptr = tr.situation.circumstance.flag<T>(name);
+        T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
         *ptr = default_value;
       }
       return tr;

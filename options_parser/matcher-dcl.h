@@ -20,21 +20,45 @@ struct MatchResult {
   Priority priority;
 };
 
-struct MatchFromDoc {
+struct MatchFromDescription {
   string doc;
   string name;
   std::vector<string> opts;
-  bool is_optional;
+  bool is_arg_optional;
   size_t num_args;
+  bool is_raw;
 
-  MatchFromDoc(const string &d, bool strip = true) : doc(d) {
+  void init_not_doc() {
+    if (doc[0] == '|') {
+      is_raw = true;
+      opts = split(doc.substr(1), "|");
+      if (opts.size()) name = opts.back();
+      doc = join(opts, ", ");
+      return;
+    }
+    opts = split(doc, "|");
+    if (opts.size()) name = opts.back();
+    doc.clear();
+    for (auto o : doc) {
+      if (doc.size()) doc += ", ";
+      doc += (o.size() == 1 ? "-" : "--") + o;
+    }
+  }
+
+  MatchFromDescription(const string &d) : doc(d) {
     num_args = 0;
-    is_optional = false;
+    is_arg_optional = false;
+    is_raw = false;
+    if (!doc.size()) return;
+    if (doc[0] != '-') {
+      init_not_doc();
+      return ;
+    }
     size_t off = 0;
     auto count_args = [&](size_t &off) {
       while (off < d.size() && isspace(d[off])) ++off;
-      bool eq = off < d.size() && d[off] == '[';
-      if (eq) ++off;
+      bool sq = off < d.size() && d[off] == '[';
+      if (sq) ++off;
       size_t n = 0;
       while (off < d.size()) {
         if (d[off] == '=') {
@@ -65,8 +89,8 @@ struct MatchFromDoc {
         }
         ++n;
       }
-      if (eq && off < d.size() && d[off] == ']') ++off;
-      if (eq) is_optional = true;
+      if (sq && off < d.size() && d[off] == ']') ++off;
+      if (sq) is_arg_optional = true;
       return n;
     };
     while (off < d.size()) {
@@ -122,20 +146,14 @@ struct Matcher {
     };
   }
 
-  Matcher(const std::vector<string> &opts,
-          Maybe<Priority> exact_priority = nothing,
-          Maybe<Priority> prefix_priority = nothing,
-          Maybe<state<Either<string>, Situation>> arg_getter = nothing);
-
   template <class S, decltype(*(string *)0 = std::declval<S>(), 0) = 0>
-  Matcher(S &&s, Maybe<Priority> exact_priority = nothing,
-          Maybe<Priority> prefix_priority = nothing,
-          Maybe<state<Either<string>, Situation>> arg_getter =
-              nothing) {
-    MatchFromDoc from_doc(s);
-    new (this)
-        Matcher(from_doc.opts, exact_priority, prefix_priority, arg_getter);
+  Matcher(S &&s, Maybe<state<Either<string>, Situation>> arg_getter = nothing) {
+    MatchFromDescription from_desc(s);
+    new (this) Matcher(from_desc, arg_getter);
   }
+
+  Matcher(const MatchFromDescription &mfd,
+          Maybe<state<Either<string>, Situation>> arg_getter = nothing);
 
   MatchResult operator()(const Situation &s) const;
 

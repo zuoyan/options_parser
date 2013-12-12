@@ -16,23 +16,19 @@ OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
 }
 
 OPTIONS_PARSER_IMP Matcher::Matcher(
-    const std::vector<string> &opts, Maybe<Priority> exact_priority,
-    Maybe<Priority> prefix_priority,
+    const MatchFromDescription &mfd,
     Maybe<state<Either<string>, Situation>> arg_getter) {
-  match_ = [opts, exact_priority, prefix_priority, arg_getter](
+  match_ = [mfd, exact_priority, prefix_priority, arg_getter](
       const Situation &s) {
-    bool has_raw = false;
-    for (const auto &opt : opts) {
-      if (opt.size() && opt.at(0) == '-') {
-        has_raw = true;
-        break;
-      }
-    }
     std::pair<Either<string>, Situation> m_s;
     if (arg_getter) {
       m_s = (*arg_getter.get())(s);
     } else {
-      m_s = match_value(always_true{}, '-', !has_raw)(s);
+      if (mfd.is_raw) {
+        m_s = value()(s);
+      } else {
+        m_s = match_value(always_true{}, '-')(s);
+      }
     }
     MatchResult mr;
     mr.priority = 0;
@@ -42,20 +38,22 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
       return mr;
     }
     auto arg = *m_s.first.value.get();
-    for (auto const &o : opts) {
-      if (o == arg) {
-        mr.priority = exact_priority ? *exact_priority.get() : MATCH_EXACT;
-        return mr;
-      }
-    }
     string first_arg;
     {
       auto t = s;
       t.position.off = 0;
       first_arg = get_value(value()(t).first.value);
     }
-    if (!has_raw && arg.size() && s.position.off == 0 &&
-        starts_with(first_arg, "--")) {
+    if (mfd.is_raw || (s.position.off == 0 && starts_with(first_arg, "--"))) {
+      for (auto const &o : mfs.opts) {
+        if (o == arg) {
+          mr.priority = exact_priority ? *exact_priority.get() : MATCH_EXACT;
+          return mr;
+        }
+      }
+    }
+    if (mfd.is_raw) return mr;
+    if (arg.size() && s.position.off == 0 && starts_with(first_arg, "--")) {
       for (auto const &o : opts) {
         if (arg.size() < o.size() && o.compare(0, arg.size(), arg) == 0) {
           mr.priority = prefix_priority ? *prefix_priority.get() : MATCH_PREFIX;
@@ -71,7 +69,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
         if (arg[0] != o.back()) continue;
         mr.priority = MATCH_EXACT;
         off = s.position.off;
-        while (first_arg[off] == '-') ++off;
+        if (off == 0 && off < first_arg.size() && first_arg[off] == '-') ++off;
         ++off;
         if (off < first_arg.size()) {
           mr.situation = s;
