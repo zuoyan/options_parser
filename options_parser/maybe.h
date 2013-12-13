@@ -3,8 +3,8 @@
 #include <type_traits>
 #include <cassert>
 #include <tuple>
+#include <memory>
 
-#include "options_parser/cow.h"
 #include "options_parser/mpl.h"
 #include "options_parser/string.h"
 
@@ -109,21 +109,21 @@ Maybe<T> maybe(const T &v) {
 
 template <class T>
 struct Maybe {
-  cow<T> value;
+  std::shared_ptr<T> value_ptr;
 
-  explicit operator bool() const { return value.get(); }
+  explicit operator bool() const { return value_ptr.get(); }
 
   template <class U,
-            typename std::enable_if<
-                std::is_constructible<cow<T>, const U &>::value, int>::type = 0>
+            typename std::enable_if<std::is_constructible<T, const U &>::value,
+                                    int>::type = 0>
   Maybe(const U &value)
-      : value(value) {}
+      : value_ptr(std::make_shared<T>(value)) {}
 
   Maybe(Nothing) {}
 
   Maybe() {}
 
-  Maybe(const Maybe<T> &o) : value(o.value) {}
+  Maybe(const Maybe<T> &o) : value_ptr(o.value_ptr) {}
 
   template <class U>
   Maybe &operator=(const U &v) {
@@ -134,18 +134,23 @@ struct Maybe {
     return *this;
   }
 
-  const T *get() const { return value.get(); }
+  const T *get() const { return value_ptr.get(); }
 
-  T *mutable_get() { return value.mutable_get(); }
+  T *mutable_get() {
+    if (value_ptr.use_count() > 1) {
+      value_ptr = std::make_shared<T>(*value_ptr);
+    }
+    return value_ptr.get();
+  }
 
   template <class Func>
   auto bind(Func &&func) const
-      OPTIONS_PARSER_AUTO_RETURN(value ? maybe(func(*value.get())) : nothing);
+      OPTIONS_PARSER_AUTO_RETURN(value_ptr ? maybe(func(*value_ptr)) : nothing);
 
   template <class Func>
   auto apply(Func &&func) const
-      OPTIONS_PARSER_AUTO_RETURN(value ? maybe(void_wrap(func)(*value.get()))
-                                       : nothing);
+      OPTIONS_PARSER_AUTO_RETURN(value_ptr ? maybe(void_wrap(func)(*value_ptr))
+                                           : nothing);
 
   template <class U>
   static Maybe<U> wrap(const U &v) {
