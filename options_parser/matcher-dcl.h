@@ -49,12 +49,14 @@ struct MatchFromDescription {
     num_args = 0;
     is_arg_optional = false;
     is_raw = false;
-    if (!doc.size()) return;
-    if (doc[0] != '-') {
-      init_not_doc();
-      return ;
-    }
     size_t off = 0;
+    while (off < d.size() && isspace(d[off])) ++off;
+    if (off == doc.size()) return;
+    if (doc[off] != '-') {
+      init_not_doc();
+      return;
+    }
+
     auto count_args = [&](size_t &off) {
       while (off < d.size() && isspace(d[off])) ++off;
       bool sq = off < d.size() && d[off] == '[';

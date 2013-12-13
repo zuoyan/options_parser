@@ -189,22 +189,22 @@ struct Parser {
         if (is_end) break;
         next_line = *may_next.get();
         if (starts_with(next_line, string((size_t)8, ' '))) {
-          line += "  " + strip(next_line);
+          line += next_line;
           next_line = "";
         } else {
           break;
         }
       }
-      line = strip(line);
       return line;
     };
     while (true) {
       string line = get_flag_line();
-      if (!line.size() && is_end) break;
-      if (!line.size()) continue;
+      size_t off = 0;
+      while (off < line.size() && isspace(line[off])) ++off;
+      if (off == line.size() && is_end) break;
+      if (off == line.size()) continue;
       string doc, rest;
-      if (line.find("  ") >= line.size()) {
-        size_t off = 0;
+      if (line.find("  ", off) >= line.size()) {
         while (off < line.size()) {
           if (line[off] == '-') {
             while (off < line.size() && !isspace(line[off])) ++off;
@@ -232,12 +232,11 @@ struct Parser {
         doc = line.substr(0, off);
         rest = line.substr(off);
       } else {
-        auto off = line.find("  ");
+        off = line.find("  ", off);
         doc = line.substr(0, off);
-        rest = line.substr(off);
+        rest = line.substr(off + 2);
       }
       rest = strip(rest);
-      doc = strip(doc);
       ret.push_back(add_flag(doc, rest));
     }
     return ret;

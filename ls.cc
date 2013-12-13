@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 
   app.add_flag("-A, --almost-all", "do not list implied . and ..");
 
-  app.add_flag("--author", "with -l, print the author of each file");
+  app.add_flag("    --author", "with -l, print the author of each file");
   app.add_flag("-b, --escape", "print C-style escapes for nongraphic characters");
 
   app.add_flag("--block-size=SIZE",
