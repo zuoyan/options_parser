@@ -31,6 +31,7 @@ struct Formatter {
           for (const auto &v : vs) {
             ret.push_back(v);
           }
+          if (!vs.size()) ret.push_back("");
         }
       }
       return ret;

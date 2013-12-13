@@ -16,18 +16,19 @@ inline std::vector<string> break_string(const string &text, size_t width,
   if (indent_as_first_space) {
     while (indent < text.size() && isspace(text[indent])) ++indent;
   }
+  string indent_str(indent, ' ');
   auto tokens = split(text, " ");
   string line;
   for (const string &token : tokens) {
     if (!token.size()) continue;
     if (line.size() && line.size() + token.size() + 1 + indent > width) {
-      ret.push_back(string(indent, ' ') + line);
+      ret.push_back(indent_str + line);
       line.clear();
     }
     if (line.size()) line += " " + token;
     else line = token;
   }
-  if (line.size()) ret.push_back(string(indent, ' ') + line);
+  if (line.size()) ret.push_back(indent_str + line);
   return ret;
 }
 

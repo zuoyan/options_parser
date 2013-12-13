@@ -4,7 +4,31 @@
 #include <map>
 
 int main(int argc, char* argv[]) {
-  options_parser::Parser app("ls", "try ls command");
+  options_parser::Parser app(
+      "Usage: ls [OPTION]... [FILE]...\n"
+      "List information about the FILEs (the current directory by default).\n"
+      "Sort entries alphabetically if none of -cftuvSUX nor --sort is "
+      "specified.",
+      "SIZE may be (or may be an integer optionally followed by) one of "
+      "following:"
+      " KB 1000, K 1024, MB 1000*1000, M 1024*1024, and so on for G, T, P, E, "
+      "Z, Y.\n"
+      "\n"
+      "Using color to distinguish file types is disabled both by default and"
+      " with --color=never.  With --color=auto, ls emits color codes only when"
+      " standard output is connected to a terminal.  The LS_COLORS environment"
+      " variable can change the settings.  Use the dircolors command to set "
+      "it.\n"
+      "\n"
+      "Exit status:\n"
+      " 0  if OK,\n"
+      " 1  if minor problems (e.g., cannot access subdirectory),\n"
+      " 2  if serious trouble (e.g., cannot access command-line argument).\n"
+      "\n"
+      "Report ls bugs to bug-coreutils@gnu.org\n"
+      "GNU coreutils home page: <http://www.gnu.org/software/coreutils/>\n"
+      "General help using GNU software: <http://www.gnu.org/gethelp/>\n"
+      "For complete documentation, run: info coreutils 'ls invocation'\n");
   options_parser::Circumstance circumstance;
   circumstance.init();
   app.set_circumstance(circumstance);
