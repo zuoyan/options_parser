@@ -1,19 +1,24 @@
 #include "options_parser/options_parser.h"
 
 #include <fstream>
+#include <iomanip>
 
-std::vector<double> sums(5, 0.0);
+std::vector<double> g_sums(5, 0.0);
 double g_min;
 double g_max;
+bool g_print_value = false;
 
 void add_value(double x) {
-  if (!sums.size()) return;
+  if (g_print_value) {
+    std::cout << "value:" << x << std::endl;
+  }
+  if (!g_sums.size()) return;
   double a = 1;
-  for (size_t i = 0; i < sums.size(); ++i) {
-    sums[i] += a;
+  for (size_t i = 0; i < g_sums.size(); ++i) {
+    g_sums[i] += a;
     a *= x;
   }
-  if (sums[0]) {
+  if (g_sums[0]) {
     g_min = std::min(g_min, x);
     g_max = std::max(g_max, x);
   } else {
@@ -59,13 +64,19 @@ size_t combine(size_t n, size_t i) {
 
 double pown(double x, size_t c) {
   double a = 1;
-  for (size_t i = 0; i < c; ++i) {
-    a *= x;
+  while (c) {
+    if (c & 1) {
+      a *= x;
+    }
+    x *= x;
+    c >>= 1;
   }
   return a;
 }
 
 int main(int argc, char* argv[]) {
+  std::cout << std::setprecision(10);
+
   options_parser::Parser app(
       "Calculation and print the stats of values, gathered from command "
       "line arguments, or/and stdin/files.\n\n",
@@ -73,10 +84,13 @@ int main(int argc, char* argv[]) {
       "lot.");
   app.add_help();
   app.add_parser(options_parser::parser());
+  app.add_option("--print-value", [&]() {
+      g_print_value = true;
+    }, "print out every value");
 
   app.add_option("--moment NUM", [&](size_t m) {
-                                   if (m >= sums.size()) {
-                                     sums.resize(m);
+                                   if (m >= g_sums.size()) {
+                                     g_sums.resize(m);
                                    }
                                  },
                  "Set # of moments");
@@ -115,9 +129,9 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  double n = sums[0];
-  double s = sums[1];
-  double ss = sums[2];
+  double n = g_sums[0];
+  double s = g_sums[1];
+  double ss = g_sums[2];
 
   std::cout << "num: " << n << std::endl;
   std::cout << "mean: " << s / n << std::endl;
@@ -128,12 +142,12 @@ int main(int argc, char* argv[]) {
             << std::endl;
   std::cout << "sum: " << s << std::endl;
 
-  std::vector<double> moments(sums.size(), 0);
-  for (size_t i = 0; i < sums.size(); ++i) {
-    moments[i] = sums[i] / n;
+  std::vector<double> moments(g_sums.size(), 0);
+  for (size_t i = 0; i < g_sums.size(); ++i) {
+    moments[i] = g_sums[i] / n;
   }
 
-  std::vector<double> central_moments(sums.size(), 0);
+  std::vector<double> central_moments(g_sums.size(), 0);
   central_moments[0] = 1;
   central_moments[1] = 0;
   for (size_t i = 2; i < moments.size(); ++i) {
@@ -152,9 +166,9 @@ int main(int argc, char* argv[]) {
               << std::endl;
   }
 
-  std::vector<double> kumulants(sums.size(), 0);
+  std::vector<double> kumulants(g_sums.size(), 0);
   kumulants[0] = 0;
-  for (size_t i = 2; i < sums.size(); ++i) {
+  for (size_t i = 2; i < g_sums.size(); ++i) {
     kumulants[i] = moments[i];
     for (size_t j = 1; j < i; ++j) {
       kumulants[i] -= combine(i - 1, j - 1) * kumulants[j] * moments[i - j];
