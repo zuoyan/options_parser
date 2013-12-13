@@ -42,18 +42,27 @@ int main(int argc, char *argv[]) {
       "recusandae. Itaque earum rerum hic tenetur a sapiente delectus, "
       "ut aut reiciendis voluptatibus maiores alias consequatur aut "
       "perferendis doloribus asperiores repellat…");
-  Circumstance circumstance;
-  circumstance.init();
-  app.set_circumstance(circumstance);
-
   app.add_parser(options_parser::parser());
 
-  app.add_option("--config-file", [&](const std::string &fn) {
-      options_parser::Maybe<std::string> error, error_full;
-      app.parse_file(fn, &error, &error_full);
-      return error_full ? *error_full.get() : "";
-                                },
-                 {"--config-file FILE", "parse options from FILE"});
+  app.add_option("--config-file FILE",
+                 [&](const options_parser::MatchResult &mr) {
+                   auto v_s = options_parser::value()(mr.situation);
+                   options_parser::TakeResult tr;
+                   tr.situation = v_s.second;
+                   if (get_error(v_s.first)) {
+                     tr.error = get_error(v_s.first);
+                     return tr;
+                   }
+                   auto pr = app.parse_file(get_value(v_s.first),
+                                            tr.situation.circumstance);
+                   if (pr.error) {
+                     tr.error = pr.error;
+                     if (pr.error_full) tr.error = pr.error_full;
+                   }
+                   tr.situation.circumstance = pr.situation.circumstance;
+                   return tr;
+                 },
+                 "parse options from FILE");
 
   Parser sub("\nsub command and options\n",
              "Using -- to toggle sub option off.\n\n");
@@ -163,5 +172,6 @@ int main(int argc, char *argv[]) {
   std::cerr << "int_value " << int_value << std::endl;
   std::cerr << "flag " << flag << std::endl;
   std::cerr << "flag_int " << FLAGS_flag_int << std::endl;
-  std::cout << "circumstance:" << circumstance.to_str() << std::endl;
+  std::cout << "circumstance:" << parse_result.situation.circumstance.to_str()
+            << std::endl;
 }

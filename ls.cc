@@ -29,10 +29,6 @@ int main(int argc, char* argv[]) {
       "GNU coreutils home page: <http://www.gnu.org/software/coreutils/>\n"
       "General help using GNU software: <http://www.gnu.org/gethelp/>\n"
       "For complete documentation, run: info coreutils 'ls invocation'\n");
-  options_parser::Circumstance circumstance;
-  circumstance.init();
-  app.set_circumstance(circumstance);
-
   app.add_parser(options_parser::parser());
   std::string flags = R"FLAGS(
 -a, --all                  do not ignore entries starting with .
@@ -156,7 +152,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::cout << circumstance.to_str() << std::endl;
+  std::cout << parse_result.situation.circumstance.to_str() << std::endl;
 
   return 0;
 }

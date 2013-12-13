@@ -61,39 +61,36 @@ struct Parser {
 
   ParseResult parse(const Situation &s);
 
-  inline ParseResult parse(int argc, char *argv[]) {
+  inline ParseResult parse(int argc, char *argv[],
+                           Circumstance circumstance = Circumstance()) {
     Situation s;
     s.args = ArgvArguments(argc, argv);
     s.position = Position(1, 0);
-    if (holder_) {
-      holder_->circumstance.init();
-      s.circumstance = holder_->circumstance;
-    }
+    s.circumstance = circumstance;
     return parse(s);
   }
 
-  inline ParseResult parse(const std::vector<string> argv, size_t off = 1) {
+  inline ParseResult parse(const std::vector<string> argv, size_t off = 1,
+                           Circumstance circumstance = Circumstance()) {
     Situation s;
     s.args = VectorStringArguments(argv);
     s.position = Position(off, 0);
-    if (holder_) {
-      holder_->circumstance.init();
-      s.circumstance = holder_->circumstance;
-    }
+    s.circumstance = circumstance;
     return parse(s);
   }
 
-  ParseResult parse_string(const string &a);
+  ParseResult parse_string(const string &a,
+                           Circumstance circumstance = Circumstance());
 
   template <class GetLine>
-  size_t parse_lines(const GetLine &get_line, Maybe<string> *error,
-                     Maybe<string> *error_full);
+  ParseResult parse_lines(const GetLine &get_line,
+                          Circumstance circumstance = Circumstance());
 
-  size_t parse_lines(const std::vector<string> &lines,
-                     Maybe<string> *error, Maybe<string> *error_full);
+  ParseResult parse_lines(const std::vector<string> &lines,
+                          Circumstance circumstance = Circumstance());
 
-  void parse_file(const string &fn, Maybe<string> *error,
-                  Maybe<string> *error_full);
+  ParseResult parse_file(const string &fn,
+                         Circumstance circumstance = Circumstance());
 
   void add_parser(const Parser &parser, int priority = 0);
 
@@ -242,13 +239,11 @@ struct Parser {
     return ret;
   }
 
+  std::vector<std::shared_ptr<Option>> add_flags_lines(
+      const std::vector<string> &lines);
   std::vector<std::shared_ptr<Option>> add_flags_file(const string &fn);
 
   string help_message(int level, int width);
-
-  void set_circumstance(const Circumstance &circumstance) {
-    holder_->circumstance = circumstance;
-  }
 
  private:
   std::vector<Document> documents(int level);
@@ -265,9 +260,6 @@ struct Parser {
     Document epilog;
     std::vector<std::shared_ptr<Option>> options;
     std::vector<std::pair<int, std::shared_ptr<Holder>>> parsers;
-    // The outest circumstance(the one in parser who called parse) is passed to
-    // every matcher and taker.
-    Circumstance circumstance;
     Holder() {
       active = true;
       help_level = 0;

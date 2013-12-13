@@ -80,7 +80,6 @@ OPTIONS_PARSER_IMP void Parser::enable() {
 }
 
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
-  set_circumstance(s.circumstance);
   Situation c = s;
   ParseResult pr;
 
@@ -162,30 +161,36 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   return pr;
 }
 
-OPTIONS_PARSER_IMP ParseResult Parser::parse_string(const string &a) {
+OPTIONS_PARSER_IMP ParseResult
+Parser::parse_string(const string &a, Circumstance circumstance) {
   VectorStringArguments args(expand(a));
-  return parse({{0, 0}, args});
+  Situation s;
+  s.args = args;
+  s.position.off = 0;
+  s.position.index = 0;
+  s.circumstance = circumstance;
+  return parse(s);
 }
 
-OPTIONS_PARSER_IMP size_t Parser::parse_lines(const std::vector<string> &lines,
-                                              Maybe<string> *error,
-                                              Maybe<string> *error_full) {
+OPTIONS_PARSER_IMP ParseResult
+Parser::parse_lines(const std::vector<string> &lines,
+                    Circumstance circumstance) {
   size_t off = 0;
   return parse_lines([&]()->Maybe<string> {
                        if (off < lines.size()) return lines[off++];
                        return nothing;
                      },
-                     error, error_full);
+                     circumstance);
 }
 
-OPTIONS_PARSER_IMP void Parser::parse_file(const string &fn,
-                                           Maybe<string> *error,
-                                           Maybe<string> *error_full) {
+OPTIONS_PARSER_IMP ParseResult Parser::parse_file(const string &fn,
+                                                  Circumstance circumstance) {
   std::ifstream ifs(fn);
+  ParseResult pr;
   if (!ifs.good()) {
-    *error = "open-failed";
-    *error_full = "open file '" + fn + "' to read failed";
-    return;
+    pr.error = "open-failed";
+    pr.error_full = "open file '" + fn + "' to read failed";
+    return pr;
   }
   auto get_line = [&]()->Maybe<string> {
     if (!ifs.good()) return nothing;
@@ -193,15 +198,18 @@ OPTIONS_PARSER_IMP void Parser::parse_file(const string &fn,
     std::getline(ifs, l);
     return l;
   };
-  size_t off = parse_lines(get_line, error, error_full);
-  if (*error) {
-    auto p = "parse file '" + fn + "' failed at line " + to_str(off);
-    if (*error_full) {
-      *error_full = p + " " + *error_full->get();
+  pr = parse_lines(get_line, pr.situation.circumstance);
+  if (pr.error) {
+    auto p = "parse file '" + fn + "' failed at line " +
+             to_str(pr.situation.position.index) + " field " +
+             to_str(pr.situation.position.off);
+    if (pr.error_full) {
+      pr.error_full = p + " " + *pr.error_full.get();
     } else {
-      *error_full = p;
+      pr.error_full = p;
     }
   }
+  return pr;
 }
 
 OPTIONS_PARSER_IMP void Parser::add_parser(const Parser &parser, int priority) {
@@ -232,6 +240,16 @@ OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_file(
     if (!ifs.fail()) {
       return line;
     }
+    return nothing;
+  };
+  return add_flags_lines(get_line);
+}
+
+OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_lines(
+    const std::vector<string> &lines) {
+  size_t off = 0;
+  auto get_line = [&]()->Maybe<string> {
+    if (off < lines.size()) return lines[off++];
     return nothing;
   };
   return add_flags_lines(get_line);

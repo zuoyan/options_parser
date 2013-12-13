@@ -18,18 +18,21 @@ Parser::Parser(const Description &description, const Epilog &epilog) {
 }
 
 template <class GetLine>
-size_t Parser::parse_lines(const GetLine &get_line, Maybe<string> *error,
-                           Maybe<string> *error_full) {
-  size_t off = 0;
+ParseResult Parser::parse_lines(const GetLine &get_line,
+                                Circumstance circumstance) {
+  size_t line_index = 0;
+  ParseResult pr;
+  pr.situation.circumstance = circumstance;
+  pr.situation.position.index = 0;
+  pr.situation.position.off = 0;
   while (true) {
     auto maybe_line = get_line();
     if (!maybe_line) break;
     auto l = *maybe_line.get();
     if (!l.size() || l[0] == '#') {
-      off += 1;
+      line_index += 1;
       continue;
     }
-    size_t start = off++;
     if (l.back() == '\\') {
       l = l.substr(0, l.size() - 1);
       while (true) {
@@ -44,14 +47,15 @@ size_t Parser::parse_lines(const GetLine &get_line, Maybe<string> *error,
         l += n.substr(0, n.size() - 1);
       }
     }
-    auto pr = parse_string(l);
+    pr = parse_string(l, pr.situation.circumstance);
     if (pr.error) {
-      *error = pr.error;
-      *error_full = pr.error_full;
-      return start;
+      break;
     }
+    ++line_index;
   }
-  return off;
+  pr.situation.position.off = pr.situation.position.index;
+  pr.situation.position.index = line_index;
+  return pr;
 }
 
 template <class CM, class CD>
