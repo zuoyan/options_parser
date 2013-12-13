@@ -66,7 +66,7 @@ struct Parser {
     s.args = ArgvArguments(argc, argv);
     s.position = Position(1, 0);
     if (holder_) {
-      holder_->circumstance.check_init();
+      holder_->circumstance.init();
       s.circumstance = holder_->circumstance;
     }
     return parse(s);
@@ -77,7 +77,7 @@ struct Parser {
     s.args = VectorStringArguments(argv);
     s.position = Position(off, 0);
     if (holder_) {
-      holder_->circumstance.check_init();
+      holder_->circumstance.init();
       s.circumstance = holder_->circumstance;
     }
     return parse(s);

@@ -14,11 +14,9 @@ struct Circumstance {
   Circumstance(const Circumstance&) = default;
 
   void init() {
-    holder_ = std::make_shared<Holder>();
-  }
-
-  void check_init() {
-    if (!holder_) init();
+    if (!holder_) {
+      holder_ = std::make_shared<Holder>();
+    }
   }
 
   template <class T>
