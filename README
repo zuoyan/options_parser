@@ -1,5 +1,5 @@
 options parser for C++0x
-=======================
+==============================
 
 This's a C++0x library for parsing options/command line arguments. Every option
 is viewed as Match, Take, and Document. Generally, Match is a function from
@@ -11,7 +11,7 @@ This library has simpified routines for general match and take, see
 options_parser_test.cc and apt.cc for usage examples.
 
 Consideration
---------------
+-------------
 
 Match can be any functions, not just string match, and Take can be any
 functions, not just assignments. I think, this approach is more flexible than
@@ -24,3 +24,45 @@ The most powerful design for options processing is using a real dynamic parser,
 or parser DSL library. User just defines whole the syntax with embeded
 actions. But this's a little hard to implement and even harder, i think, to make
 it easy to use.
+
+Build
+-----
+
+This library based on CMake, and the library can be build as static/shared
+library, or header only.
+
+To build example and library,
+
+```bash
+mkdir build && cd build # in options_parser directory
+cmake ../
+make
+```
+
+Examples
+--------
+
+For basic example, see file stats.cc and ls.cc.
+
+This library can parse most program --help message as flags. For example,
+
+```bash
+# in options_parser/build directory
+ls --help | sed -n '/^  /p' | grep -ve --help > ls.flag
+# known problem: Currently, ls --help prints '-p, --indicator-style=slash', which is ambiguous with '--indicator-style=WORD'.
+make options_parser_test
+./options_parser_test --flag_file ls.flag -lh
+./options_parser_test --flag_file ls.flag --help
+```
+
+This library can also parse configuration file lines. For example,
+
+```bash
+# in options_parser/build directory
+echo "# comments as this, are ignored" >> t.conf
+echo "--int 42" >> t.conf
+# $ and \ are also parsed as shell
+echo '--func $HOME \' >> t.conf
+echo ' $USER' >> t.conf
+./options_parser_test --config-file t.conf
+```

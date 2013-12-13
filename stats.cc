@@ -74,21 +74,21 @@ int main(int argc, char* argv[]) {
   app.add_help();
   app.add_parser(options_parser::parser());
 
-  app.add_option("moment", [&](size_t m) {
-                             if (m >= sums.size()) {
-                               sums.resize(m);
-                             }
-                           },
-                 {"--moment NUM", "Set # of moments"});
+  app.add_option("--moment NUM", [&](size_t m) {
+                                   if (m >= sums.size()) {
+                                     sums.resize(m);
+                                   }
+                                 },
+                 "Set # of moments");
 
-  app.add_option("value", [&](double v) {
-                            add_value(v);
-                            return 1;
-                          },
-                 {"--value <float value>", "Add value from argument"});
+  app.add_option("--value <float value>", [&](double v) {
+                                            add_value(v);
+                                            return 1;
+                                          },
+                 "Add value from argument");
 
   app.add_option(
-      "file", [&](std::string fn) {
+      "--file FILE", [&](std::string fn) {
                 if (fn.size() && fn != "-") {
                   std::ifstream ifs(fn);
                   add_istream(&ifs);
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
                   add_istream(&std::cin);
                 }
               },
-      {"--file FILE", "Add values from FILE, all non value texts are inogred"});
+            "Add values from FILE, all non value texts are inogred");
 
   app.add_option(options_parser::MATCH_POSITION, [&](std::string s) {
                                                    std::istringstream is(s);
