@@ -81,9 +81,7 @@ OPTIONS_PARSER_IMP void Parser::enable() {
 
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   Situation c = s;
-  if (c.circumstance.get<Parser>() == NULL) {
-    *c.circumstance.get_or_set<Parser>() = *this;
-  }
+  *c.circumstance.get_or_set<Parser>() = *this;
   ParseResult pr;
 
   auto show_position = [](const Situation &s, size_t limit = 80) {
@@ -186,8 +184,27 @@ Parser::parse_lines(const std::vector<string> &lines,
                      circumstance);
 }
 
-OPTIONS_PARSER_IMP ParseResult Parser::parse_file(const string &fn,
-                                                  Circumstance circumstance) {
+OPTIONS_PARSER_IMP TakeResult take_config_file(const MatchResult &mr) {
+  auto v_s = value()(mr.situation);
+  TakeResult tr;
+  tr.situation = v_s.second;
+  if (get_error(v_s.first)) {
+    tr.error = get_error(v_s.first);
+    return tr;
+  }
+  auto cli = tr.situation.circumstance.get<Parser>();
+  assert(cli);
+  auto pr = cli->parse_file(get_value(v_s.first), tr.situation.circumstance);
+  if (pr.error) {
+    tr.error = pr.error;
+    if (pr.error_full) tr.error = pr.error_full;
+  }
+  tr.situation.circumstance = pr.situation.circumstance;
+  return tr;
+}
+
+OPTIONS_PARSER_IMP ParseResult
+Parser::parse_file(const string &fn, Circumstance circumstance) {
   std::ifstream ifs(fn);
   ParseResult pr;
   if (!ifs.good()) {

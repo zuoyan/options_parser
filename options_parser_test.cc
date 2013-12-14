@@ -44,24 +44,7 @@ int main(int argc, char *argv[]) {
       "perferendis doloribus asperiores repellat…");
   app.add_parser(options_parser::parser());
 
-  app.add_option("--config-file FILE",
-                 [&](const options_parser::MatchResult &mr) {
-                   auto v_s = options_parser::value()(mr.situation);
-                   options_parser::TakeResult tr;
-                   tr.situation = v_s.second;
-                   if (get_error(v_s.first)) {
-                     tr.error = get_error(v_s.first);
-                     return tr;
-                   }
-                   auto pr = app.parse_file(get_value(v_s.first),
-                                            tr.situation.circumstance);
-                   if (pr.error) {
-                     tr.error = pr.error;
-                     if (pr.error_full) tr.error = pr.error_full;
-                   }
-                   tr.situation.circumstance = pr.situation.circumstance;
-                   return tr;
-                 },
+  app.add_option("--config-file FILE", &options_parser::take_config_file,
                  "parse options from FILE");
 
   Parser sub("\nsub command and options\n",

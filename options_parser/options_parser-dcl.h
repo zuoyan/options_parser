@@ -268,6 +268,8 @@ struct Parser {
   std::shared_ptr<Holder> holder_;
 };
 
+TakeResult take_config_file(const MatchResult &mr);
+
 // A default global parser, to hold options across libraries/objects.
 Parser &parser();
 
