@@ -126,17 +126,7 @@ int main(int argc, char* argv[]) {
     --version  output version information and exit
 )FLAGS";
 
-  {
-    size_t i = 0;
-    auto flag_lines = options_parser::split(flags, "\n");
-    auto get_line = [&]()->options_parser::Maybe<std::string> {
-      if (i < flag_lines.size()) {
-        return flag_lines[i++];
-      }
-      return options_parser::nothing;
-    };
-    app.add_flags_lines(get_line);
-  }
+  app.add_flags_lines(options_parser::split(flags, "\n"));
 
   app.add_help("--help");
 
