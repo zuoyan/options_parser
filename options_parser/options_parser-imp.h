@@ -150,8 +150,8 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
     if (tr.error) {
       pr.situation = c;
       pr.error = "take-error";
-      pr.error_full = string("process failed: ") + *tr.error.get() + "\n" +
-                      "at " + show_position(c) + "\n" + "matched option:\n" +
+      pr.error_full = *tr.error.get() + "\ncurrent argument " +
+                      show_position(c) + "\nwith matched option:\n" +
                       join(mr_opt.second->document.format(78), "\n");
       return pr;
     }
@@ -204,7 +204,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse_file(const string &fn,
              to_str(pr.situation.position.index) + " field " +
              to_str(pr.situation.position.off);
     if (pr.error_full) {
-      pr.error_full = p + " " + *pr.error_full.get();
+      pr.error_full = p + "\n" + *pr.error_full.get();
     } else {
       pr.error_full = p;
     }
