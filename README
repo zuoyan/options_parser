@@ -51,8 +51,8 @@ This library can parse most program --help message as flags. For example,
 ls --help | sed -n '/^  /p' | grep -ve --help > ls.flag
 # known problem: Currently, ls --help prints '-p, --indicator-style=slash', which is ambiguous with '--indicator-style=WORD'.
 make options_parser_test
-./options_parser_test --flag_file ls.flag -lh
-./options_parser_test --flag_file ls.flag --help
+./options_parser_test --flag-file ls.flag -lh
+./options_parser_test --flag-file ls.flag --help
 ```
 
 This library can also parse configuration file lines. For example,
