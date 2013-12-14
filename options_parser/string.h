@@ -102,5 +102,18 @@ inline string strip(const string &s) {
   return s.substr(l, r - l);
 }
 
+inline string replace(const string &o, const string &p, const string &n) {
+  size_t off = 0;
+  string ret;
+  while (off < o.size()) {
+    size_t next = o.find(p, off);
+    if (next > o.size()) next = o.size();
+    ret += o.substr(off, next - off);
+    if (next < o.size()) ret += n;
+    off = next + p.size();
+  }
+  return ret;
+}
+
 }  // namespace options_parser
 #endif  // FILE_B3B012C5_486F_4FF9_8AF3_C94136A260CE_H

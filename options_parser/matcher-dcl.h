@@ -49,70 +49,95 @@ struct MatchFromDescription {
     num_args = 0;
     is_arg_optional = false;
     is_raw = false;
-    size_t off = 0;
-    while (off < d.size() && isspace(d[off])) ++off;
-    if (off == doc.size()) return;
-    if (doc[off] != '-') {
-      init_not_doc();
-      return;
+
+    {
+      size_t off = 0;
+      while (off < d.size() && isspace(d[off])) ++off;
+      if (off == doc.size()) return;
+      if (doc[off] != '-') {
+        init_not_doc();
+        return;
+      }
     }
 
-    auto count_args = [&](size_t &off) {
-      while (off < d.size() && isspace(d[off])) ++off;
-      bool sq = off < d.size() && d[off] == '[';
-      if (sq) ++off;
-      size_t n = 0;
-      while (off < d.size()) {
-        if (d[off] == '=') {
+    auto desc_split = [](string s) {
+      std::vector<string> ret;
+      size_t off = 0;
+      while (off < s.size()) {
+        if (isspace(s[off]) || s[off] == ',') {
           ++off;
           continue;
         }
-        if (isspace(d[off])) {
+        if (s[off] == '[') {
+          ret.push_back(s.substr(off, 1));
+          ++off;
+          if (off < s.size() && s[off] == '=') ++off;
+          continue;
+        }
+        if (s[off] == ']') {
+          ret.push_back(s.substr(off, 1));
           ++off;
           continue;
         }
-        if (d[off] == '<') {
-          while (off < d.size() && d[off] != '>') {
+        if (s[off] == '-') {
+          if (off + 1 < s.size() && s[off + 1] != '-') {
+            ret.push_back(s.substr(off, 2));
+            off += 2;
+            if (off < s.size() && s[off] == '=') {
+              ++off;
+            }
+            continue;
+          }
+          size_t n = off;
+          while (n < s.size() && !isspace(s[n]) && s[n] != '[' && s[n] != '=') {
+            ++n;
+          }
+          ret.push_back(s.substr(off, n - off));
+          off = n;
+          if (off < s.size() && s[off] == '=') {
             ++off;
           }
-          if (off < d.size()) ++off;
-          ++n;
           continue;
         }
-        if (d[off] == ',') {
-          ++off;
-          break;
+        if (s[off] == '<') {
+          size_t n = s.find('>', off);
+          if (n >= s.size()) {
+            n = s.size();
+          } else {
+            ++n;
+          }
+          ret.push_back(s.substr(off, n - off));
+          off = n;
+          continue;
         }
-        if (d[off] == '-') {
-          break;
-        }
-        while (off < d.size() && !isspace(d[off])) {
-          ++off;
-        }
-        ++n;
+        size_t n = off;
+        while (n < s.size() && !isspace(s[n])) ++n;
+        ret.push_back(s.substr(off, n - off));
+        off = n;
       }
-      if (sq && off < d.size() && d[off] == ']') ++off;
-      if (sq) is_arg_optional = true;
-      return n;
+      return ret;
     };
-    while (off < d.size()) {
-      if (off < d.size() && isspace(d[off])) {
-        ++off;
-        continue;
-      }
-      assert(d[off] == '-');
-      size_t n = off;
-      while (n < d.size() && d[n] == '-') ++n;
-      size_t t = n + 1;
-      if (n - off > 1) {
-        while (t < d.size() && !isspace(d[t]) && d[t] != '=' && d[t] != '[') {
-          ++t;
-        }
-      }
-      opts.emplace_back(d.data() + n, d.data() + t);
-      off = t;
-      size_t na = count_args(off);
-      if (na > num_args) num_args = na;
+
+    std::vector<string> vs = desc_split(doc);
+
+    is_arg_optional = std::find(vs.begin(), vs.end(), "[") != vs.end();
+    {
+      auto it = std::remove_if(vs.begin(), vs.end(),
+                               [](string s) { return s == "[" || s == "]"; });
+      vs.erase(it, vs.end());
+    }
+
+    size_t off = 0;
+    while (off < vs.size()) {
+      assert(vs[off][0] == '-');
+      size_t o = 0;
+      while (o < vs[off].size() && vs[off][o] == '-') ++o;
+      opts.push_back(vs[off].substr(o));
+      size_t n = off + 1;
+      while (n < vs.size() && vs[n][0] != '-') ++n;
+      size_t na = n - off - 1;
+      if (num_args < na) num_args = na;
+      off = n;
     }
     if (opts.size()) name = opts.back();
   }
