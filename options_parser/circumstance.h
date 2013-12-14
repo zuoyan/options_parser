@@ -21,6 +21,7 @@ struct Circumstance {
 
   template <class T>
   T* get(const std::string &key) {
+    if (!holder_) return NULL;
     auto it = holder_->key_values.find(key);
     if (it == holder_->key_values.end()) return NULL;
     Any& a = it->second;
@@ -29,6 +30,7 @@ struct Circumstance {
 
   template <class T>
   T* get_or_set(const std::string& key, const T& default_value=T()) {
+    init();
     auto it =
         holder_->key_values.insert(std::make_pair(key, default_value)).first;
     Any& a = it->second;
@@ -41,6 +43,7 @@ struct Circumstance {
   }
 
   Any* get(const std::type_info& k) {
+    if (!holder_) return NULL;
     auto it = holder_->type_values.find(&k);
     if (it == holder_->type_values.end()) return NULL;
     return &it->second;
@@ -48,7 +51,8 @@ struct Circumstance {
 
   template <class T>
   T* get_or_set(const T& default_value=T()) {
-    auto it = holder_->type_values.insert(std::make_pair(&typeid(T),
+    init();
+        auto it = holder_->type_values.insert(std::make_pair(&typeid(T),
                                                          default_value)).first;
     Any& a = it->second;
     auto p = a.mutable_get<T>();
