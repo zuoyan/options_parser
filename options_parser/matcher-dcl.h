@@ -173,6 +173,24 @@ struct Matcher {
     };
   }
 
+  template <
+      class F,
+      decltype(*(int *)0 = std::declval<F>()(std::declval<string>()), 0) = 0>
+  Matcher(const F &func) {
+    match_ = [func](const Situation &s) {
+      auto a_s = value()(s);
+      MatchResult mr;
+      mr.start = s.position;
+      mr.situation = a_s.second;
+      mr.priority = 0;
+      if (!get_error(a_s.first)) {
+        string arg = get_value(a_s.first);
+        mr.priority = func(arg);
+      }
+      return mr;
+    };
+  }
+
   template <class S, decltype(*(string *)0 = std::declval<S>(), 0) = 0>
   Matcher(S &&s, Maybe<state<Either<string>, Situation>> arg_getter = nothing) {
     MatchFromDescription from_desc(s);

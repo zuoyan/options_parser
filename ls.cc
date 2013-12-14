@@ -130,8 +130,6 @@ int main(int argc, char* argv[]) {
 
   app.add_help("--help");
 
-  app.parse(argc, argv);
-
   auto parse_result = app.parse(argc, argv);
 
   if (parse_result.error) {

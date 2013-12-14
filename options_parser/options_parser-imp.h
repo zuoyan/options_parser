@@ -141,13 +141,10 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
       return pr;
     }
     auto const &mr_opt = mr_opts.front();
-    // std::cerr << "match start " << mr_opt.first.start.index
-    //           << ":" << mr_opt.first.start.off << std::endl;
-    // std::cerr << "match end " << mr_opt.first.end.index
-    //           << ":" << mr_opt.first.end.off << std::endl;
+    // std::cerr << "match end at " << show_position(mr_opt.first.situation)
+    //           << std::endl;
     auto tr = mr_opt.second->take(mr_opt.first);
-    // std::cerr << "tr end " << tr.end.index
-    //           << ":" << tr.end.off << std::endl;
+    // std::cerr << "tr end at " << show_position(tr.situation) << std::endl;
     if (tr.error) {
       pr.situation = c;
       pr.error = "take-error";
@@ -252,7 +249,7 @@ OPTIONS_PARSER_IMP std::shared_ptr<Option> Parser::add_option(
 }
 
 OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_file(
-    const string &fn) {
+    const string &fn, size_t doc_indent) {
   std::ifstream ifs(fn);
   auto get_line = [&]()->Maybe<string> {
     string line;
@@ -262,17 +259,17 @@ OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_file(
     }
     return nothing;
   };
-  return add_flags_lines(get_line);
+  return add_flags_lines(get_line, doc_indent);
 }
 
 OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_lines(
-    const std::vector<string> &lines) {
+    const std::vector<string> &lines, size_t doc_indent) {
   size_t off = 0;
   auto get_line = [&]()->Maybe<string> {
     if (off < lines.size()) return lines[off++];
     return nothing;
   };
-  return add_flags_lines(get_line);
+  return add_flags_lines(get_line, doc_indent);
 }
 
 OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {

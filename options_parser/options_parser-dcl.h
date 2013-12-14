@@ -171,8 +171,8 @@ struct Parser {
   }
 
   template <class GetLine>
-  std::vector<std::shared_ptr<Option>> add_flags_lines(
-      const GetLine &get_line) {
+  std::vector<std::shared_ptr<Option>> add_flags_lines(const GetLine &get_line,
+                                                       size_t doc_indent = 8) {
     std::vector<std::shared_ptr<Option>> ret;
     std::string next_line;
     bool is_end = false;
@@ -185,7 +185,7 @@ struct Parser {
         is_end = !may_next;
         if (is_end) break;
         next_line = *may_next.get();
-        if (starts_with(next_line, string((size_t)8, ' '))) {
+        if (doc_indent && starts_with(next_line, string(doc_indent, ' '))) {
           line += next_line;
           next_line = "";
         } else {
@@ -240,8 +240,10 @@ struct Parser {
   }
 
   std::vector<std::shared_ptr<Option>> add_flags_lines(
-      const std::vector<string> &lines);
-  std::vector<std::shared_ptr<Option>> add_flags_file(const string &fn);
+      const std::vector<string> &lines, size_t doc_indent = 8);
+
+  std::vector<std::shared_ptr<Option>> add_flags_file(const string &fn,
+                                                      size_t doc_indent = 8);
 
   string help_message(int level, int width);
 

@@ -99,6 +99,15 @@ struct state {
       return std::make_pair(nothing, s);
     });
   }
+
+  state<V, S> peek() const {
+    auto tf = func_;
+    return [tf](const S & s) {
+      auto r = tf(s);
+      r.second = s;
+      return r;
+    };
+  }
 };
 
 template <class S>

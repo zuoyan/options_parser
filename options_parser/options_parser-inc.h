@@ -64,7 +64,7 @@ std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
   auto help_take = [self](const MatchResult &) {
     auto parser = self;
     std::cout << parser.help_message(0, 78) << std::endl;
-    exit(1);
+    exit(0);
     TakeResult tr;
     return tr;
   };

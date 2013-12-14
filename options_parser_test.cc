@@ -143,7 +143,9 @@ int main(int argc, char *argv[]) {
                  "Add flag according help message");
 
   auto parse_result = app.parse(argc, argv);
-
+  if (getenv("OPTIONS_PARSER_a1dd2545_588d_4fff_9914_30f352434d67")) {
+    app.parse_string("--help");
+  }
   if (parse_result.error) {
     std::cerr << *parse_result.error.get() << std::endl;
     if (parse_result.error_full) {
@@ -151,7 +153,6 @@ int main(int argc, char *argv[]) {
     }
     return 1;
   }
-
   std::cerr << "int_value " << int_value << std::endl;
   std::cerr << "flag " << flag << std::endl;
   std::cerr << "flag_int " << FLAGS_flag_int << std::endl;

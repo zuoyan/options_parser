@@ -20,3 +20,6 @@ TARGET_LINK_LIBRARIES(ls options_parser)
 ADD_EXECUTABLE(maybe_test maybe_test.cc)
 
 ADD_EXECUTABLE(match_from_description_test match_from_description_test.cc)
+
+ADD_EXECUTABLE(git git.cc)
+TARGET_LINK_LIBRARIES(git options_parser)
