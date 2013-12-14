@@ -77,6 +77,8 @@ struct Circumstance {
     return get_or_set("/flag/" + name, default_value);
   }
 
+  bool has_flag(const string& name) { return get("/flag/" + name) != NULL; }
+
   string to_str() {
     if (!holder_) return "{}";
     std::vector<string> vs;
