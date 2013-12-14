@@ -67,19 +67,6 @@ struct Any {
     }
 
     template <class U>
-    struct has_to_str {
-      template <class UU>
-      static auto deduce(UU*)
-          -> decltype(options_parser::to_str(std::declval<UU>()), 0);
-
-      template <class UU>
-      static char deduce(...);
-
-      static constexpr bool value =
-          std::is_same<decltype(deduce<U>((U*)0)), int>::value;
-    };
-
-    template <class U>
     typename std::enable_if<has_to_str<U>::value, string>::type to_str_impl(
         const U& value) const {
       return options_parser::to_str(value);
@@ -88,7 +75,7 @@ struct Any {
     template <class U>
     typename std::enable_if<!has_to_str<U>::value, string>::type to_str_impl(
         const U& value) const {
-      return "to_str not-implemented";
+      return string("object<") + typeid(U).name() + ">";
     }
 
     virtual string to_str() const { return to_str_impl(value); }

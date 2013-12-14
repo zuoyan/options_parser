@@ -81,6 +81,9 @@ OPTIONS_PARSER_IMP void Parser::enable() {
 
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   Situation c = s;
+  if (c.circumstance.get<Parser>() == NULL) {
+    *c.circumstance.get_or_set<Parser>() = *this;
+  }
   ParseResult pr;
 
   auto show_position = [](const Situation &s, size_t limit = 80) {

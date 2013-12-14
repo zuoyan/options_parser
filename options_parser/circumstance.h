@@ -19,13 +19,17 @@ struct Circumstance {
     }
   }
 
-  template <class T>
-  T* get(const std::string &key) {
+  Any* get(const std::string& key) {
     if (!holder_) return NULL;
     auto it = holder_->key_values.find(key);
     if (it == holder_->key_values.end()) return NULL;
-    Any& a = it->second;
-    return a.mutable_get<T>();
+    return &it->second;
+  }
+
+  template <class T>
+  T* get(const std::string &key) {
+    auto a = this->get(key);
+    return a->mutable_get<T>();
   }
 
   template <class T>
@@ -67,7 +71,7 @@ struct Circumstance {
   T* get() {
     auto p = get(typeid(T));
     if (p) {
-      return p->get<T>();
+      return p->mutable_get<T>();
     }
     return NULL;
   }
