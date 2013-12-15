@@ -6,7 +6,7 @@
 using namespace options_parser;
 
 int main(int argc, char *argv[]) {
-  MatchFromDescription mfd(argv[1]);
+  MatchFromDescription mfd{std::string(argv[1])};
   std::cerr << "doc:" << mfd.doc << std::endl;
   std::cerr << "name:" << mfd.name << std::endl;
   std::cerr << "opts:" << join(mfd.opts, " | ") << std::endl;

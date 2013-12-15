@@ -1,6 +1,7 @@
 #ifndef FILE_FB6492BE_F7CB_4344_9575_466EAC3B995E_H
 #define FILE_FB6492BE_F7CB_4344_9575_466EAC3B995E_H
 #include <functional>
+#include <algorithm>
 
 #include "options_parser/maybe.h"
 #include "options_parser/arguments-dcl.h"
@@ -119,7 +120,6 @@ struct MatchFromDescription {
     };
 
     std::vector<string> vs = desc_split(doc);
-
     is_arg_optional = std::find(vs.begin(), vs.end(), "[") != vs.end();
     {
       auto it = std::remove_if(vs.begin(), vs.end(),
