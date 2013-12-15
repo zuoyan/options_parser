@@ -23,3 +23,5 @@ ADD_EXECUTABLE(match_from_description_test match_from_description_test.cc)
 
 ADD_EXECUTABLE(git git.cc)
 TARGET_LINK_LIBRARIES(git options_parser)
+
+ADD_EXECUTABLE(secure_sharing secure_sharing.cc)
