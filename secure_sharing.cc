@@ -9,6 +9,9 @@
  *
  */
 #include "options_parser/options_parser.h"
+#include <random>
+
+std::mt19937_64 my_random;
 
 // x^8 + x^4 + x^3 + x + 1.
 inline unsigned char f256_add(unsigned char a, unsigned char b) {
@@ -281,13 +284,13 @@ void test() {
     assert(ivs.size() == 256);
   }
   for (size_t c = 0; c < 1000; ++c) {
-    std::vector<F256> C(random() % 256);
+    std::vector<F256> C(my_random() % 256);
     for (size_t i = 0; i < C.size(); ++i) {
-      C[i].value = random();
+      C[i].value = my_random();
     }
     std::set<int> xset;
     while (xset.size() < C.size()) {
-      xset.insert(random() % 256);
+      xset.insert(my_random() % 256);
     }
     std::vector<F256> xs, ys(C.size());
     for (auto x : xset) {
@@ -311,9 +314,9 @@ void test() {
   }
 
   for (size_t c = 0; c < 1000; ++c) {
-    size_t K = 1 + random() % 256;
+    size_t K = 1 + my_random() % 256;
     std::vector<F256> A(K * K), B(K * K), C(K * K);
-    for (size_t i = 0; i < A.size(); ++i) A[i].value = random();
+    for (size_t i = 0; i < A.size(); ++i) A[i].value = my_random();
     bool f = matrix_inverse(K, A.data(), B.data());
     if (f) {
       matrix_multiply(K, A.data(), B.data(), C.data());
@@ -353,7 +356,7 @@ void sharing_message(size_t K, size_t m, const char* plain, const F256* codes,
   std::vector<F256> M(K * K), Minv(K * K);
   while (1) {
     for (size_t i = 0; i < M.size(); ++i) {
-      M[i].value = random();
+      M[i].value = my_random();
     }
     if (matrix_inverse(K, M.data(), Minv.data())) break;
   }
@@ -362,7 +365,7 @@ void sharing_message(size_t K, size_t m, const char* plain, const F256* codes,
   }
   std::vector<char> C(K);
   for (size_t i = 0; i < K; ++i) {
-    C[i] = random();
+    C[i] = my_random();
   }
   sharing_seg(K, C.data(), codes, parts);
   std::vector<char> E(K);
@@ -380,7 +383,7 @@ void sharing_message(size_t K, size_t m, const char* plain, const F256* codes,
     C[i] ^= plain[off + i];
   }
   for (size_t i = m - off; i + 1 < K; ++i) {
-    C[i] = random();
+    C[i] = my_random();
   }
   C.back() ^= (m - off);
   matrix_mv(K, M.data(), (const F256*)C.data(), (F256*)E.data());
@@ -534,6 +537,10 @@ std::vector<std::pair<F256, std::string>> expand_code_file(
 }
 
 int main(int argc, char *argv[]) {
+  {
+    // seed by default
+    my_random.seed(std::random_device{}());
+  }
   options_parser::Parser app(
       "Split a message, and deliver to N nodes. Every K nodes"
       " can recover the origin message, but every (K - 1) nodes can not."
@@ -563,6 +570,10 @@ int main(int argc, char *argv[]) {
   // &test doesn't work with g++-4.6
   app.add_option("--test", []() {test();}, "test first");
 #endif
+
+  app.add_option("--seed NUM", [](size_t a) {
+      my_random.seed(a);
+    }, "seed the random");
 
   app.add_option("-K, --min-recover-nodes", [&](size_t k)->std::string {
                                               if (k == 0) {
