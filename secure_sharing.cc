@@ -559,9 +559,10 @@ int main(int argc, char *argv[]) {
       "  Combine file parts to recover the orignal:\n"
       "    secure_sharing -K 3 --combine secure.doc 'secure.part[1-3]'\n"
       "\n"
-      "Please note that this program does *NOT* encrypt any thing, it is"
-      " possible to recover the orginal file if it's entropy is very small."
-      " You are oblidged to encrypt it before passing to this tool.\n"
+      "Please note that this program does *NOT* encrypt, it is possible"
+      " to recover the orginal file if it's entropy is very small."
+      " This tool also try some block chaining and mixing, but you'd better do"
+      " encrypt before passing to this tool.\n"
       "Wrote by jiangzuoyan@gmail.com, use it at you own risk.");
   app.add_help();
   size_t K = 0;
