@@ -260,20 +260,27 @@ void sharing_seg(size_t K, const char* plain, const F256* codes,
 
 void sharing_message(size_t K, size_t m, const char* plain, const F256* codes,
                      std::vector<std::string>& parts) {
+  std::vector<char> C(K);
+  for (size_t i = 0; i < K; ++i) {
+    C[i] = random();
+  }
+  sharing_seg(K, C.data(), codes, parts);
   size_t off = 0;
   while (off + K <= m) {
-    sharing_seg(K, plain + off, codes, parts);
+    for (size_t i = 0; i < K; ++i) {
+      C[i] ^= plain[off + i];
+    }
+    sharing_seg(K, C.data(), codes, parts);
     off += K;
   }
-  std::vector<char> rest(K);
   for (size_t i = 0; i + off < m; ++i) {
-    rest[i] = plain[off + i];
+    C[i] ^= plain[off + i];
   }
   for (size_t i = m - off; i + 1 < K; ++i) {
-    rest[i] = random();
+    C[i] = random();
   }
-  rest.back() = (m - off);
-  sharing_seg(K, rest.data(), codes, parts);
+  C.back() ^= (m - off);
+  sharing_seg(K, C.data(), codes, parts);
 }
 
 void recover_seg(size_t K, const F256* codes, const F256* seg, F256* plain) {
@@ -283,24 +290,34 @@ void recover_seg(size_t K, const F256* codes, const F256* seg, F256* plain) {
 void recover_message(size_t K, const F256* codes,
                      const std::vector<std::string>& parts,
                      std::string& plain) {
-  std::vector<F256> seg(K);
-  std::vector<F256> seg_plain(K);
-  assert(parts.size());
-  size_t pl = parts.front().size();
   assert(parts.size() >= K);
+  size_t pl = parts.front().size();
+  assert(pl >= (size_t)1);
   for (size_t i = 0; i < parts.size(); ++i) {
     if (parts[i].size() != pl) {
       std::cerr << "parts with different length ...\n";
       abort();
     }
   }
-  for (size_t i = 0; i < pl; ++i) {
+  std::vector<F256> seg(K);
+  std::vector<F256> seg_plain(K);
+  std::vector<F256> C(K);
+  for (size_t j = 0; j < K; ++j) {
+    seg[j] = F256(parts[j][0]);
+  }
+  recover_seg(K, codes, seg.data(), C.data());
+  for (size_t i = 1; i < pl; ++i) {
     for (size_t j = 0; j < K; ++j) {
       seg[j] = F256(parts[j][i]);
     }
     recover_seg(K, codes, seg.data(), seg_plain.data());
+    seg_plain.swap(C);
+    for (size_t j = 0; j < K; ++j) {
+      seg_plain[j] += C[j];
+    }
     size_t L = K;
     if (i + 1 == pl) L = seg_plain.back().value;
+    assert(L <= K);
     for (size_t j = 0; j < L; ++j) {
       plain.push_back(seg_plain[j].value);
     }
@@ -428,7 +445,7 @@ int main(int argc, char *argv[]) {
   size_t K = 0;
 
 #ifndef NDEBUG
-  app.add_option("--test", &test, "test first");
+  // app.add_option("--test", &test, "test first"); doesn't work with g++-4.6
 #endif
 
   app.add_option("-K, --min-recover-nodes", [&](size_t k)->std::string {
