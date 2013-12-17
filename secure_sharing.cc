@@ -188,6 +188,70 @@ void poly_resolve(size_t K, const F256* xs, const F256* ys, F256* P) {
   }
 }
 
+
+// 'mat'is a K x K matrix in row major.
+void matrix_mv(size_t K, const F256 *mat, const F256 * x, F256 *y) {
+  for (size_t i = 0; i < K; ++i) {
+    y[i] = F256();
+    for (size_t j = 0; j < K; ++j) {
+      y[i] += mat[i * K + j] * x[j];
+    }
+  }
+}
+
+void matrix_multiply(size_t K, const F256 *A, const F256 *B, F256 *C) {
+  for (size_t i = 0; i < K; ++i) {
+    for (size_t j = 0; j < K; ++j) {
+      C[i * K + j] = F256();
+      for (size_t k = 0; k < K; ++k) {
+        C[i * K + j] += A[i * K + k] * B[k * K + j];
+      }
+    }
+  }
+}
+
+bool matrix_inverse(size_t K, const F256 *A_, F256 *B) {
+  for (size_t i = 0; i < K; ++i) {
+    for (size_t j = 0; j < K; ++j) {
+      B[i * K + j] = F256(i == j);
+    }
+  }
+  std::vector<F256> A(A_, A_ + K * K);
+  for (size_t i = 0; i < K; ++i) {
+    size_t p = i;
+    for (p = i; p < K; ++p) {
+      if (A[p * K + i].value) break;
+    }
+    if (p == K) return false;
+    if (p != i) {
+      for (size_t j = 0; j < K; ++j) {
+        std::swap(A[p * K + j], A[i * K + j]);
+        std::swap(B[p * K + j], B[i * K + j]);
+      }
+    }
+    auto a = A[i * K + i];
+    assert(a.value != 0);
+    for (size_t j = 0; j < K; ++j) {
+      B[i * K + j] /= a;
+    }
+    for (size_t j = i; j < K; ++j) {
+      A[i * K + j] /= a;
+    }
+    for (size_t r = 0; r < K; ++r) {
+      if (r == i) continue;
+      auto a = A[r * K + i];
+      for (size_t j = 0; j < K; ++j) {
+        B[r * K + j] -= a * B[i * K + j];
+      }
+      for (size_t j = i; j < K; ++j) {
+        A[r * K + j] -= a * A[i * K + j];
+      }
+      assert (r >= i || A[r * K + i].value == 0);
+    }
+  }
+  return true;
+}
+
 #ifndef NDEBUG
 void test() {
   for (int i = 1; i < 256; ++i) {
@@ -245,6 +309,32 @@ void test() {
       assert(C[i].value == Cc[i].value);
     }
   }
+
+  for (size_t c = 0; c < 1000; ++c) {
+    size_t K = 1 + random() % 256;
+    std::vector<F256> A(K * K), B(K * K), C(K * K);
+    for (size_t i = 0; i < A.size(); ++i) A[i].value = random();
+    bool f = matrix_inverse(K, A.data(), B.data());
+    if (f) {
+      matrix_multiply(K, A.data(), B.data(), C.data());
+      for (size_t i = 0; i < K; ++i) {
+        for (size_t j = 0; j < K; ++j) {
+          if (C[i * K + j].value != (i == j)) {
+            for (size_t i = 0; i < K; ++i) {
+              std::cerr << "C[" << i << "] ";
+              for (size_t j = 0; j < K; ++j) {
+                std::cerr << " " << (int)C[i * K + j].value;
+              }
+              std::cerr << std::endl;
+            }
+          }
+          assert(C[i * K + j].value == (i == j));
+        }
+      }
+    } else {
+      std::cerr << "c="<< c << " K=" << K << " random matrix not inversable\n";
+    }
+  }
 }
 #endif
 
@@ -260,17 +350,30 @@ void sharing_seg(size_t K, const char* plain, const F256* codes,
 
 void sharing_message(size_t K, size_t m, const char* plain, const F256* codes,
                      std::vector<std::string>& parts) {
+  std::vector<F256> M(K * K), Minv(K * K);
+  while (1) {
+    for (size_t i = 0; i < M.size(); ++i) {
+      M[i].value = random();
+    }
+    if (matrix_inverse(K, M.data(), Minv.data())) break;
+  }
+  for (size_t i = 0; i < K; ++i) {
+    sharing_seg(K, (char*)&M[i * K], codes, parts);
+  }
   std::vector<char> C(K);
   for (size_t i = 0; i < K; ++i) {
     C[i] = random();
   }
   sharing_seg(K, C.data(), codes, parts);
+  std::vector<char> E(K);
   size_t off = 0;
   while (off + K <= m) {
     for (size_t i = 0; i < K; ++i) {
       C[i] ^= plain[off + i];
     }
-    sharing_seg(K, C.data(), codes, parts);
+    matrix_mv(K, M.data(), (const F256*)C.data(), (F256*)E.data());
+    sharing_seg(K, E.data(), codes, parts);
+    C.swap(E);
     off += K;
   }
   for (size_t i = 0; i + off < m; ++i) {
@@ -280,7 +383,8 @@ void sharing_message(size_t K, size_t m, const char* plain, const F256* codes,
     C[i] = random();
   }
   C.back() ^= (m - off);
-  sharing_seg(K, C.data(), codes, parts);
+  matrix_mv(K, M.data(), (const F256*)C.data(), (F256*)E.data());
+  sharing_seg(K, E.data(), codes, parts);
 }
 
 void recover_seg(size_t K, const F256* codes, const F256* seg, F256* plain) {
@@ -292,7 +396,7 @@ void recover_message(size_t K, const F256* codes,
                      std::string& plain) {
   assert(parts.size() >= K);
   size_t pl = parts.front().size();
-  assert(pl >= (size_t)1);
+  assert(pl >= K + 2);
   for (size_t i = 0; i < parts.size(); ++i) {
     if (parts[i].size() != pl) {
       std::cerr << "parts with different length ...\n";
@@ -300,26 +404,37 @@ void recover_message(size_t K, const F256* codes,
     }
   }
   std::vector<F256> seg(K);
-  std::vector<F256> seg_plain(K);
-  std::vector<F256> C(K);
-  for (size_t j = 0; j < K; ++j) {
-    seg[j] = F256(parts[j][0]);
-  }
-  recover_seg(K, codes, seg.data(), C.data());
-  for (size_t i = 1; i < pl; ++i) {
+  std::vector<F256> C(K), E(K);
+  std::vector<F256> M(K * K), Minv(K * K);
+  for (size_t i = 0; i < K; ++i) {
     for (size_t j = 0; j < K; ++j) {
       seg[j] = F256(parts[j][i]);
     }
-    recover_seg(K, codes, seg.data(), seg_plain.data());
-    seg_plain.swap(C);
+    recover_seg(K, codes, seg.data(), &M[i * K]);
+  }
+  for (size_t j = 0; j < K; ++j) {
+    seg[j] = F256(parts[j][K]);
+  }
+  recover_seg(K, codes, seg.data(), C.data());
+  if (!matrix_inverse(K, M.data(), Minv.data())) {
+    std::cerr << "recover message got a degenerated matrix ...\n";
+    return;
+  }
+  for (size_t i = K + 1; i < pl; ++i) {
     for (size_t j = 0; j < K; ++j) {
-      seg_plain[j] += C[j];
+      seg[j] = F256(parts[j][i]);
     }
+    recover_seg(K, codes, seg.data(), E.data());
+    matrix_mv(K, Minv.data(), E.data(), seg.data());
+    for (size_t j = 0; j < K; ++j) {
+      seg[j] += C[j];
+    }
+    C.swap(E);
     size_t L = K;
-    if (i + 1 == pl) L = seg_plain.back().value;
+    if (i + 1 == pl) L = seg.back().value;
     assert(L <= K);
     for (size_t j = 0; j < L; ++j) {
-      plain.push_back(seg_plain[j].value);
+      plain.push_back(seg[j].value);
     }
   }
 }
@@ -445,7 +560,8 @@ int main(int argc, char *argv[]) {
   size_t K = 0;
 
 #ifndef NDEBUG
-  // app.add_option("--test", &test, "test first"); doesn't work with g++-4.6
+  // &test doesn't work with g++-4.6
+  app.add_option("--test", []() {test();}, "test first");
 #endif
 
   app.add_option("-K, --min-recover-nodes", [&](size_t k)->std::string {
