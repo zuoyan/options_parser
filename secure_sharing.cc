@@ -576,8 +576,9 @@ int main(int argc, char *argv[]) {
       " can recover the origin message, but every (K - 1) nodes can not."
       " Or recover a message from K nodes after splitting.\n"
       "Usage:\n"
-      "  secure_sharing -K NUM whole-file part-file-with-codes --split\n"
-      "  secure_sharing -K NUM whole-file part-file-with-codes --combine\n"
+      "  secure_sharing -K NUM whole-file part-pattern --split\n"
+      "  secure_sharing -K NUM whole-file part-pattern --combine\n"
+      "Where part-pattern looks like 'part.[1-13]'.\n"
       "\n",
       "Examples:\n"
       "\n"
@@ -628,7 +629,8 @@ int main(int argc, char *argv[]) {
                  [&](std::string a) { whole_file = a; },
                  {"<whole file>", "specify the whole file if not already"});
 
-  app.add_option("--whole-file FILE", [&](std::string a) { whole_file = a; },
+  app.add_option("-w, --whole-file FILE",
+                 [&](std::string a) { whole_file = a; },
                  "specify the whole file");
 
   auto add_part_files = [&](const std::vector<std::pair<F256, std::string>> &
@@ -683,7 +685,7 @@ int main(int argc, char *argv[]) {
                  "specify part files with code range, like this"
                  " \"--part-file 'part.[1-13]'\"");
 
-  app.add_option("--part-code-file CODE FILE",
+  app.add_option("-p, --part-code-file CODE FILE",
                  [&](size_t code, std::string file) {
                    if (code >= 256) {
                      return "invalid code " + options_parser::to_str(code);
