@@ -3,8 +3,8 @@
  * @author Changsheng Jiang <jiangzuoyan@gmail.com>
  * @date   Sun Dec 15 09:53:37 2013
  *
- * @brief Share information between N nodes, and every K nodes can
- * recover the information, but every (K - 1) nodes can not.
+ * @brief Split information to N parts, and every K parts can
+ * recover the information, but every (K - 1) parts can not.
  *
  *
  */
@@ -572,28 +572,31 @@ int main(int argc, char *argv[]) {
     my_random.seed(std::random_device{}());
   }
   options_parser::Parser app(
-      "Split a message, and deliver to N nodes. Every K nodes"
-      " can recover the origin message, but every (K - 1) nodes can not."
-      " Or recover a message from K nodes after splitting.\n"
+      "This tool can split a message, and deliver to N parts. Every K parts"
+      " can recover the origin message, but every (K - 1) parts can not."
+      " Or, in reverse, it can recover a message from K parts after splitting."
+      " Every part has a unique code, which should be given explicitly.\n"
       "Usage:\n"
       "  secure_sharing -K NUM whole-file part-pattern --split\n"
       "  secure_sharing -K NUM whole-file part-pattern --combine\n"
-      "Where part-pattern looks like 'part.[1-13]'.\n"
+      "Where part-pattern looks like 'file-prefix[001-13]postfix, the code"
+      " range '[001-013]' is expanded to 001, 002, 003, ..., 013'.\n"
       "\n",
       "Examples:\n"
       "\n"
-      "  To split file 'secure.doc' to 10 files, and every 3 files can recover"
-      " the 'secure.doc'. Note that, '[1-10]' is a pattern also used by shell,"
-      " so you'd better quote it:\n"
-      "    secure_sharing -K 3 secure.doc 'secure.part.[1-10]' --split\n"
+      "  To split file 'secure.doc' to 10 parts, and every 3 parts can recover"
+      " the 'secure.doc'.\n"
+      "    secure_sharing -K 3 secure.doc 'secure.part.[001-010]' --split\n"
       "\n"
       "  Combine file parts to recover the orignal:\n"
-      "    secure_sharing -K 3 secure.doc 'secure.part[1-3]' --combine\n"
+      "    secure_sharing -K 3 secure.doc 'secure.part.[001-003]' --combine\n"
       "\n"
-      "Please note that this program does *NOT* encrypt, it is possible"
+      "Please note that this tool does *NOT* encrypt, it is possible"
       " to recover the orginal file if it's entropy is very small."
       " This tool also try some block chaining and mixing, but you'd better do"
-      " encrypt before passing to this tool.\n"
+      " encrypt before passing to this tool."
+      " In current implementation, code must be in range [0, 255], this limits"
+      " K and N to range [1, 255].\n"
       "Wrote by jiangzuoyan@gmail.com, use it at you own risk.");
   app.add_help();
   size_t K = 0;
@@ -607,15 +610,15 @@ int main(int argc, char *argv[]) {
       my_random.seed(a);
     }, "seed the random");
 
-  app.add_option("-K, --min-recover-nodes NUM",
+  app.add_option("-K, --min-recover-parts NUM",
                  [&](size_t k)->std::string {
-                   if (k == 0 || k > 256) {
-                     return "must in range [0, 256]";
+                   if (k == 0 || k > 255) {
+                     return "must in range [0, 255]";
                    }
                    K = k;
                    return "";
                  },
-                 "the minimal nodes required to recover");
+                 "the minimal parts required to recover");
 
   std::string whole_file;
   std::vector<std::pair<F256, std::string>> part_files;
@@ -655,25 +658,24 @@ int main(int argc, char *argv[]) {
 
   app.add_option(
       options_parser::value().peek().apply([&](std::string a) {
-        if (!whole_file.size()) {
-          // don't compete with whole_file
-          return 0;
-        }
-        auto cfs = expand_code_file(a);
-        return cfs.size() ? options_parser::MATCH_POSITION : 0;
+                   if (!whole_file.size()) {
+                     // don't compete with whole_file
+                     return 0;
+                   }
+                   auto cfs = expand_code_file(a);
+                   return cfs.size() ? options_parser::MATCH_POSITION : 0;
       }),
       [&](std::string a) {
-        auto cfs = expand_code_file(a);
-        auto e = add_part_files(cfs);
-        if (e.size()) {
-          return "expand part and code range '" + a + "' got " + e;
-        }
-        return e;
+                   auto cfs = expand_code_file(a);
+                   auto e = add_part_files(cfs);
+                   if (e.size()) {
+                     return "expand part and code range '" + a + "' got " + e;
+                   }
+                   return e;
       },
-      {"<parts pattern>",
-       "specify part files with code range, like this 'part.[1-13]'"});
+      {"<parts pattern>", "specify parts through pattern"});
 
-  app.add_option("--part-file <parts pattern>",
+  app.add_option("-p, --part <parts pattern>",
                  [&](std::string a) {
                    auto cfs = expand_code_file(a);
                    auto e = add_part_files(cfs);
@@ -682,10 +684,9 @@ int main(int argc, char *argv[]) {
                    }
                    return e;
                  },
-                 "specify part files with code range, like this"
-                 " \"--part-file 'part.[1-13]'\"");
+                 "specify parts through pattern");
 
-  app.add_option("-p, --part-code-file CODE FILE",
+  app.add_option("-c, --code-part CODE FILE",
                  [&](size_t code, std::string file) {
                    if (code >= 256) {
                      return "invalid code " + options_parser::to_str(code);
@@ -697,7 +698,7 @@ int main(int argc, char *argv[]) {
                    }
                    return e;
                  },
-                 "specify a part file with given code");
+                 "specify a part with given code and file");
 
   bool do_split = false;
   bool do_combine = false;
@@ -711,45 +712,41 @@ int main(int argc, char *argv[]) {
   auto parse_result = app.parse(argc, argv);
 
   if (parse_result.error) {
-    std::cerr << "parse-error: " << *parse_result.error.get() << std::endl;
+    std::cerr << "parse arguments got error: " << *parse_result.error.get()
+              << std::endl;
     if (parse_result.error_full) {
-      std::cerr << *parse_result.error_full.get() << std::endl;
+      std::cerr << "details:" << std::endl << *parse_result.error_full.get()
+                << std::endl;
     }
     return 1;
   }
 
-  if (do_split && do_combine) {
-    std::cerr << "both split and combine?" << std::endl;
-    return 1;
-  }
-
-  if (!(do_split || do_combine)) {
+  if ((int)do_split + (int)do_combine != 1) {
     std::cerr << "split or combine, choose one" << std::endl;
     return 1;
   }
 
   if (K == 0) {
-    std::cerr << "minimal recover nodes is zero ..." << std::endl;
+    std::cerr << "the minimal recoverable parts size is required" << std::endl;
     return 1;
   }
 
   if (part_files.size() < K) {
-    std::cerr << "the parts file num. " << part_files.size()
-              << " is less than minimal recoverable nodes size " << K
-              << std::endl;
+    std::cerr << "the parts num. " << part_files.size()
+              << " is less than the minimal recoverable size" << K << std::endl;
     return 1;
   }
 
   if (do_split) {
     auto e = split_file(K, whole_file, part_files);
     if (e.size()) {
-      std::cerr << "split failed, " << e << std::endl;
+      std::cerr << "split failed: " << e << std::endl;
       return 1;
     }
   } else {
     auto e = combine_file(K, whole_file, part_files);
     if (e.size()) {
-      std::cerr << "combine failed, " << e << std::endl;
+      std::cerr << "combine failed: " << e << std::endl;
       return 1;
     }
   }
