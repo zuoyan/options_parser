@@ -394,16 +394,15 @@ void recover_seg(size_t K, const F256* codes, const F256* seg, F256* plain) {
   poly_resolve(K, codes, seg, plain);
 }
 
-void recover_message(size_t K, const F256* codes,
-                     const std::vector<std::string>& parts,
-                     std::string& plain) {
+std::string recover_message(size_t K, const F256* codes,
+                            const std::vector<std::string>& parts,
+                            std::string& plain) {
   assert(parts.size() >= K);
   size_t pl = parts.front().size();
   assert(pl >= K + 2);
   for (size_t i = 0; i < parts.size(); ++i) {
     if (parts[i].size() != pl) {
-      std::cerr << "parts with different length ...\n";
-      abort();
+      return "parts with different length ...";
     }
   }
   std::vector<F256> seg(K);
@@ -420,8 +419,7 @@ void recover_message(size_t K, const F256* codes,
   }
   recover_seg(K, codes, seg.data(), C.data());
   if (!matrix_inverse(K, M.data(), Minv.data())) {
-    std::cerr << "recover message got a degenerated matrix ...\n";
-    return;
+    return "recover message got a degenerated matrix ...";
   }
   for (size_t i = K + 1; i < pl; ++i) {
     for (size_t j = 0; j < K; ++j) {
@@ -435,14 +433,17 @@ void recover_message(size_t K, const F256* codes,
     C.swap(E);
     size_t L = K;
     if (i + 1 == pl) L = seg.back().value;
-    assert(L <= K);
+    if (L > K) {
+      return "some parts are invalid, got error tail length";
+    }
     for (size_t j = 0; j < L; ++j) {
       plain.push_back(seg[j].value);
     }
   }
+  return "";
 }
 
-void split_file(
+std::string split_file(
     size_t K, const std::string& in_file,
     const std::vector<std::pair<F256, std::string>>& out_code_files) {
   std::vector<F256> codes(out_code_files.size());
@@ -451,19 +452,33 @@ void split_file(
   }
   std::string plain;
   {
-    std::ifstream ifs(in_file);
-    plain.assign(std::istreambuf_iterator<char>(ifs),
-                 std::istreambuf_iterator<char>());
+    if (in_file.size() && in_file != "-") {
+      std::ifstream ifs(in_file);
+      if (!ifs.good()) {
+        return "read whole file='" + in_file + "' failed:" + strerror(errno);
+      }
+      plain.assign(std::istreambuf_iterator<char>(ifs),
+                   std::istreambuf_iterator<char>());
+    } else {
+      plain.assign(std::istreambuf_iterator<char>(std::cin),
+                   std::istreambuf_iterator<char>());
+    }
   }
   std::vector<std::string> parts(codes.size());
   sharing_message(K, plain.size(), plain.data(), codes.data(), parts);
   for (size_t i = 0; i < parts.size(); ++i) {
     std::ofstream ofs(out_code_files[i].second);
     ofs.write(parts[i].data(), parts[i].size());
+    if (!ofs.good()) {
+      return "write to part code=" + options_parser::to_str(codes[i].value) +
+             " file='" + out_code_files[i].second + "'" + " failed: " +
+             strerror(errno);
+    }
   }
+  return "";
 }
 
-void combine_file(
+std::string combine_file(
     size_t K, const std::string& out_file,
     const std::vector<std::pair<F256, std::string>>& in_code_files) {
   std::vector<F256> codes(in_code_files.size());
@@ -472,14 +487,29 @@ void combine_file(
   }
   std::vector<std::string> parts(codes.size());
   for (size_t i = 0; i < parts.size(); ++i) {
-    std::ifstream ifs(in_code_files[i].second);
-    parts[i].assign(std::istreambuf_iterator<char>(ifs),
-                    std::istreambuf_iterator<char>());
+    if (in_code_files[i].second != "-") {
+      std::ifstream ifs(in_code_files[i].second);
+      if (!ifs.good()) {
+        return "read part code=" + options_parser::to_str(codes[i].value) +
+               " file='" + in_code_files[i].second + "'" + " failed: " +
+               strerror(errno);
+      }
+      parts[i].assign(std::istreambuf_iterator<char>(ifs),
+                      std::istreambuf_iterator<char>());
+    } else {
+      parts[i].assign(std::istreambuf_iterator<char>(std::cin),
+                      std::istreambuf_iterator<char>());
+    }
   }
   std::string plain;
-  recover_message(K, codes.data(), parts, plain);
+  auto e = recover_message(K, codes.data(), parts, plain);
+  if (e.size()) return e;
   std::ofstream ofs(out_file);
   ofs.write(plain.data(), plain.size());
+  if (!ofs.good()) {
+    return "write to whole file '" + out_file + "' failed:" + strerror(errno);
+  }
+  return "";
 }
 
 // out.1 => 1:out.1
@@ -546,18 +576,18 @@ int main(int argc, char *argv[]) {
       " can recover the origin message, but every (K - 1) nodes can not."
       " Or recover a message from K nodes after splitting.\n"
       "Usage:\n"
-      "  secure_sharing -K NUM --split in-file out-file-with-codes\n"
-      "  secure_sharing -K NUM --combine out-file in-file-with-codes\n"
+      "  secure_sharing -K NUM whole-file part-file-with-codes --split\n"
+      "  secure_sharing -K NUM whole-file part-file-with-codes --combine\n"
       "\n",
       "Examples:\n"
       "\n"
       "  To split file 'secure.doc' to 10 files, and every 3 files can recover"
       " the 'secure.doc'. Note that, '[1-10]' is a pattern also used by shell,"
       " so you'd better quote it:\n"
-      "    secure_sharing -K 3 --split secure.doc 'secure.part.[1-10]'\n"
+      "    secure_sharing -K 3 secure.doc 'secure.part.[1-10]' --split\n"
       "\n"
       "  Combine file parts to recover the orignal:\n"
-      "    secure_sharing -K 3 --combine secure.doc 'secure.part[1-3]'\n"
+      "    secure_sharing -K 3 secure.doc 'secure.part[1-3]' --combine\n"
       "\n"
       "Please note that this program does *NOT* encrypt, it is possible"
       " to recover the orginal file if it's entropy is very small."
@@ -576,87 +606,105 @@ int main(int argc, char *argv[]) {
       my_random.seed(a);
     }, "seed the random");
 
-  app.add_option("-K, --min-recover-nodes", [&](size_t k)->std::string {
-                                              if (k == 0) {
-                                                return "must be positive";
-                                              }
-                                              K = k;
-                                              return "";
-                                            },
+  app.add_option("-K, --min-recover-nodes NUM",
+                 [&](size_t k)->std::string {
+                   if (k == 0 || k > 256) {
+                     return "must in range [0, 256]";
+                   }
+                   K = k;
+                   return "";
+                 },
                  "the minimal nodes required to recover");
 
-  auto get_arg = [&](const options_parser::MatchResult& mr,
-                     std::string& file_name,
-                     std::vector<std::pair<F256, std::string>>& code_files) {
-    options_parser::TakeResult tr;
-    auto f_s = options_parser::value()(mr.situation);
-    tr.error = get_error(f_s.first);
-    tr.situation = f_s.second;
-    if (tr.error) {
-      return tr;
+  std::string whole_file;
+  std::vector<std::pair<F256, std::string>> part_files;
+
+  app.add_option(options_parser::value().peek().apply([&](std::string a) {
+                   if (!whole_file.size()) {
+                     return options_parser::MATCH_POSITION;
+                   }
+                   return 0;
+                 }),
+                 [&](std::string a) { whole_file = a; },
+                 {"<whole file>", "specify the whole file if not already"});
+
+  app.add_option("--whole-file FILE", [&](std::string a) { whole_file = a; },
+                 "specify the whole file");
+
+  auto add_part_files = [&](const std::vector<std::pair<F256, std::string>> &
+                            cfs)->std::string {
+    if (!cfs.size()) {
+      return "empty";
     }
-    file_name = get_value(f_s.first);
-    while (1) {
-      auto c_s = options_parser::value<size_t>()(tr.situation);
-      if (get_error(c_s.first)) {
-        auto f_s = options_parser::value()(tr.situation);
-        if (get_error(f_s.first)) break;
-        auto cfs = expand_code_file(get_value(f_s.first));
-        if (!cfs.size()) break;
-        for (const auto& cf : cfs) {
-          code_files.push_back(cf);
-        }
-        tr.situation = f_s.second;
-        continue;
-      }
-      size_t c = get_value(c_s.first);
-      if (c >= 256) {
-        tr.error = "invalid code, must be 0-255";
-        return tr;
-      }
-      auto f_s = options_parser::value()(c_s.second);
-      if (get_error(f_s.first)) break;
-      tr.situation = f_s.second;
-      code_files.emplace_back(F256(c), get_value(f_s.first));
-    }
-    std::set<int> codes;
-    for (const auto& cf: code_files) {
+    std::set<size_t> codes;
+    for (const auto& cf : part_files) {
       codes.insert(cf.first.value);
     }
-    if (codes.size() != code_files.size()) {
-      tr.error = "some codes duplicate";
+    assert(codes.size() == part_files.size());
+    for (auto fs : cfs) {
+      if (codes.count(fs.first.value)) {
+        return "duplicate code " + options_parser::to_str(fs.first.value);
+      }
+      part_files.push_back(fs);
+      codes.insert(fs.first.value);
     }
-    if (codes.size() < K) {
-      tr.error = "expect at least " + options_parser::to_str(K) +
-                 " files with different codes, but given # " +
-                 options_parser::to_str(codes.size());
-    }
-    return tr;
+    return "";
   };
 
   app.add_option(
-      "--split IN-FILE [CODE OUT-FILE].../[OUT-FILENAME-WITH-CODE]...",
-      [&](const options_parser::MatchResult& mr) {
-        std::string in_file;
-        std::vector<std::pair<F256, std::string>> out_code_files;
-        auto tr = get_arg(mr, in_file, out_code_files);
-        if (tr.error) return tr;
-        split_file(K, in_file, out_code_files);
-        return tr;
+      options_parser::value().peek().apply([&](std::string a) {
+        if (!whole_file.size()) {
+          // don't compete with whole_file
+          return 0;
+        }
+        auto cfs = expand_code_file(a);
+        return cfs.size() ? options_parser::MATCH_POSITION : 0;
+      }),
+      [&](std::string a) {
+        auto cfs = expand_code_file(a);
+        auto e = add_part_files(cfs);
+        if (e.size()) {
+          return "expand part and code range '" + a + "' got " + e;
+        }
+        return e;
       },
-      "split IN-FILE and store every parts to OUT-FILE...");
+      {"<parts pattern>",
+       "specify part files with code range, like this 'part.[1-13]'"});
 
-  app.add_option(
-      "--combine OUT-FILE [CODE IN-FILE].../[IN-FILENAME-WITH-CODE]...",
-      [&](const options_parser::MatchResult& mr) {
-        std::string out_file;
-        std::vector<std::pair<F256, std::string>> in_code_files;
-        auto tr = get_arg(mr, out_file, in_code_files);
-        if (tr.error) return tr;
-        combine_file(K, out_file, in_code_files);
-        return tr;
-      },
-      "recover from IN-FILE... to OUT-FILE");
+  app.add_option("--part-file <parts pattern>",
+                 [&](std::string a) {
+                   auto cfs = expand_code_file(a);
+                   auto e = add_part_files(cfs);
+                   if (e.size()) {
+                     return "expand part and code range '" + a + "' got " + e;
+                   }
+                   return e;
+                 },
+                 "specify part files with code range, like this"
+                 " \"--part-file 'part.[1-13]'\"");
+
+  app.add_option("--part-code-file CODE FILE",
+                 [&](size_t code, std::string file) {
+                   if (code >= 256) {
+                     return "invalid code " + options_parser::to_str(code);
+                   }
+                   auto e = add_part_files({{F256(code), file}});
+                   if (e.size()) {
+                     return "add code '" + options_parser::to_str(code) +
+                            "' file '" + file + "' got " + e;
+                   }
+                   return e;
+                 },
+                 "specify a part file with given code");
+
+  bool do_split = false;
+  bool do_combine = false;
+
+  app.add_option("-s, --split, --share", [&]() { do_split = true; },
+                 "split whole file and store parts");
+
+  app.add_option("-c, --combine, -r, --recover", [&]() { do_combine = true; },
+                 "combine every parts to recover whole file");
 
   auto parse_result = app.parse(argc, argv);
 
@@ -666,6 +714,42 @@ int main(int argc, char *argv[]) {
       std::cerr << *parse_result.error_full.get() << std::endl;
     }
     return 1;
+  }
+
+  if (do_split && do_combine) {
+    std::cerr << "both split and combine?" << std::endl;
+    return 1;
+  }
+
+  if (!(do_split || do_combine)) {
+    std::cerr << "split or combine, choose one" << std::endl;
+    return 1;
+  }
+
+  if (K == 0) {
+    std::cerr << "minimal recover nodes is zero ..." << std::endl;
+    return 1;
+  }
+
+  if (part_files.size() < K) {
+    std::cerr << "the parts file num. " << part_files.size()
+              << " is less than minimal recoverable nodes size " << K
+              << std::endl;
+    return 1;
+  }
+
+  if (do_split) {
+    auto e = split_file(K, whole_file, part_files);
+    if (e.size()) {
+      std::cerr << "split failed, " << e << std::endl;
+      return 1;
+    }
+  } else {
+    auto e = combine_file(K, whole_file, part_files);
+    if (e.size()) {
+      std::cerr << "combine failed, " << e << std::endl;
+      return 1;
+    }
   }
 
   return 0;
