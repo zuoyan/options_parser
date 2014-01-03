@@ -191,9 +191,8 @@ void poly_resolve(size_t K, const F256* xs, const F256* ys, F256* P) {
   }
 }
 
-
 // 'mat'is a K x K matrix in row major.
-void matrix_mv(size_t K, const F256 *mat, const F256 * x, F256 *y) {
+void matrix_mv(size_t K, const F256* mat, const F256* x, F256* y) {
   for (size_t i = 0; i < K; ++i) {
     y[i] = F256();
     for (size_t j = 0; j < K; ++j) {
@@ -202,7 +201,7 @@ void matrix_mv(size_t K, const F256 *mat, const F256 * x, F256 *y) {
   }
 }
 
-void matrix_multiply(size_t K, const F256 *A, const F256 *B, F256 *C) {
+void matrix_multiply(size_t K, const F256* A, const F256* B, F256* C) {
   for (size_t i = 0; i < K; ++i) {
     for (size_t j = 0; j < K; ++j) {
       C[i * K + j] = F256();
@@ -213,7 +212,7 @@ void matrix_multiply(size_t K, const F256 *A, const F256 *B, F256 *C) {
   }
 }
 
-bool matrix_inverse(size_t K, const F256 *A_, F256 *B) {
+bool matrix_inverse(size_t K, const F256* A_, F256* B) {
   for (size_t i = 0; i < K; ++i) {
     for (size_t j = 0; j < K; ++j) {
       B[i * K + j] = F256(i == j);
@@ -249,7 +248,7 @@ bool matrix_inverse(size_t K, const F256 *A_, F256 *B) {
       for (size_t j = i; j < K; ++j) {
         A[r * K + j] -= a * A[i * K + j];
       }
-      assert (r >= i || A[r * K + i].value == 0);
+      assert(r >= i || A[r * K + i].value == 0);
     }
   }
   return true;
@@ -335,14 +334,14 @@ void test() {
         }
       }
     } else {
-      std::cerr << "c="<< c << " K=" << K << " random matrix not inversable\n";
+      std::cerr << "c=" << c << " K=" << K << " random matrix not inversable\n";
     }
   }
 }
 #endif
 
 void sharing_seg(size_t K, const char* plain, const F256* codes,
-                std::vector<std::string>& parts) {
+                 std::vector<std::string>& parts) {
   size_t N = parts.size();
   const F256* coefficients = (const F256*)plain;
   for (size_t i = 0; i < N; ++i) {
@@ -537,7 +536,7 @@ std::vector<std::pair<F256, std::string>> expand_code_file(
     t = options_parser::strip(t);
     if (!t.size()) continue;
     if (t.find('-') >= t.size()) {
-      char *e;
+      char* e;
       int c = strtol(t.data(), &e, 10);
       if (*e || c < 0 || c >= 256) {
         ret.clear();
@@ -546,7 +545,7 @@ std::vector<std::pair<F256, std::string>> expand_code_file(
       ret.emplace_back(F256(c), prefix + t + postfix);
       continue;
     }
-    char *e;
+    char* e;
     size_t first = strtol(t.data(), &e, 10);
     if (*e != '-') {
       ret.clear();
@@ -566,10 +565,10 @@ std::vector<std::pair<F256, std::string>> expand_code_file(
   return ret;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   {
     // seed by default
-    my_random.seed(std::random_device{}());
+    my_random.seed(std::random_device {}());
   }
   options_parser::Parser app(
       "This tool can split a message, and deliver to N parts. Every K parts"
@@ -603,12 +602,11 @@ int main(int argc, char *argv[]) {
 
 #ifndef NDEBUG
   // &test doesn't work with g++-4.6
-  app.add_option("--test", []() {test();}, "test first");
+  app.add_option("--test", []() { test(); }, "test first");
 #endif
 
-  app.add_option("--seed NUM", [](size_t a) {
-      my_random.seed(a);
-    }, "seed the random");
+  app.add_option("--seed NUM", [](size_t a) { my_random.seed(a); },
+                 "seed the random");
 
   app.add_option("-K, --min-recover-parts NUM",
                  [&](size_t k)->std::string {
@@ -656,24 +654,23 @@ int main(int argc, char *argv[]) {
     return "";
   };
 
-  app.add_option(
-      options_parser::value().peek().apply([&](std::string a) {
+  app.add_option(options_parser::value().peek().apply([&](std::string a) {
                    if (!whole_file.size()) {
                      // don't compete with whole_file
                      return 0;
                    }
                    auto cfs = expand_code_file(a);
                    return cfs.size() ? options_parser::MATCH_POSITION : 0;
-      }),
-      [&](std::string a) {
+                 }),
+                 [&](std::string a) {
                    auto cfs = expand_code_file(a);
                    auto e = add_part_files(cfs);
                    if (e.size()) {
                      return "expand part and code range '" + a + "' got " + e;
                    }
                    return e;
-      },
-      {"<parts pattern>", "specify parts through pattern"});
+                 },
+                 {"<parts pattern>", "specify parts through pattern"});
 
   app.add_option("-p, --part <parts pattern>",
                  [&](std::string a) {

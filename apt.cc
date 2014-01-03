@@ -17,15 +17,15 @@ int main(int argc, char *argv[]) {
   std::vector<std::string> result;
 
   common_options.push_back(cli.add_option("-c=?", [&](std::string a) {
-          result.push_back("-c");
-          result.push_back(a);
+                                                    result.push_back("-c");
+                                                    result.push_back(a);
                                                   },
                                           "Read this configuration file."));
 
   common_options.push_back(cli.add_option(
       "-o=?", [&](std::string a) {
-        result.push_back("-o");
-        result.push_back(a);
+                result.push_back("-o");
+                result.push_back(a);
               },
       "Set an arbitrary configuration option, eg -o dir::cache=/tmp"));
 
@@ -114,18 +114,19 @@ int main(int argc, char *argv[]) {
   for (auto c_h : cache_commands) {
     auto c = c_h.first;
     cache_cli.add_option("|" + c, [&, c]() {
-                           result_command = "apt-cache";
-                           result.push_back(c);
-                           cli.toggle();
-                           cache_cli.toggle();
+                                    result_command = "apt-cache";
+                                    result.push_back(c);
+                                    cli.toggle();
+                                    cache_cli.toggle();
                                   },
                          c_h.second);
   }
 
   cache_cli.add_option("-p=?", [&](std::string a) {
-      result.push_back("-p");
-      result.push_back(a);
-    }, "The package cache.");
+                                 result.push_back("-p");
+                                 result.push_back(a);
+                               },
+                       "The package cache.");
 
   cache_cli.add_option("-s=?", [&](std::string a) {
                                  result.push_back("-s");
@@ -133,9 +134,8 @@ int main(int argc, char *argv[]) {
                                },
                        "The source cache.");
 
-  cache_cli.add_option("-q", [&]() {
-      result.push_back("-q");
-    }, "Disable progress indicator.");
+  cache_cli.add_option("-q", [&]() { result.push_back("-q"); },
+                       "Disable progress indicator.");
 
   cache_cli.add_option("-i", [&]() { result.push_back("-i"); },
                        "Show only important deps for the unmet command.");
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
     ar.swap(result);
     ac.swap(result_command);
 
-    auto less = [](options_parser::Position a,  options_parser::Position b) {
+    auto less = [](options_parser::Position a, options_parser::Position b) {
       return a.index < b.index || (a.index == b.index && a.off < b.off);
     };
 
@@ -207,9 +207,9 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::vector<const char*> result_argv;
+  std::vector<const char *> result_argv;
   result_argv.push_back(result_command.c_str());
-  for (const auto & a : result) {
+  for (const auto &a : result) {
     result_argv.push_back(a.c_str());
   }
   result_argv.push_back(nullptr);

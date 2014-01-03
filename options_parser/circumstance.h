@@ -27,13 +27,13 @@ struct Circumstance {
   }
 
   template <class T>
-  T* get(const std::string &key) {
+  T* get(const std::string& key) {
     auto a = this->get(key);
     return a->mutable_get<T>();
   }
 
   template <class T>
-  T* get_or_set(const std::string& key, const T& default_value=T()) {
+  T* get_or_set(const std::string& key, const T& default_value = T()) {
     init();
     auto it =
         holder_->key_values.insert(std::make_pair(key, default_value)).first;
@@ -54,9 +54,9 @@ struct Circumstance {
   }
 
   template <class T>
-  T* get_or_set(const T& default_value=T()) {
+  T* get_or_set(const T& default_value = T()) {
     init();
-        auto it = holder_->type_values.insert(std::make_pair(&typeid(T),
+    auto it = holder_->type_values.insert(std::make_pair(&typeid(T),
                                                          default_value)).first;
     Any& a = it->second;
     auto p = a.mutable_get<T>();
@@ -107,4 +107,4 @@ struct Circumstance {
 };
 
 }  // namespace options_parser
-#endif // FILE_783C0585_1C8A_421D_A01D_952B4D77BF4E_H
+#endif  // FILE_783C0585_1C8A_421D_A01D_952B4D77BF4E_H

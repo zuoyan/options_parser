@@ -9,8 +9,7 @@ OPTIONS_PARSER_FLAGS_DEFINE(int, flag_int, 0, "A flag of int type");
 
 int main(int argc, char *argv[]) {
   Parser app(
-      std::string("Test options parser.\n") +
-      "Usage: " + argv[0] +
+      std::string("Test options parser.\n") + "Usage: " + argv[0] +
           " [<options>]\n"
           "            sub [<sub options>] [--]\n"
           "Sed ut perspiciatis, unde omnis iste natus error sit voluptatem "

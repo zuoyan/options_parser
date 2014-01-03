@@ -45,9 +45,9 @@ state<Either<T>, Situation> value(Check check) {
 template <class Check>
 state<Either<string>, Situation> match_value(Check check, char prefix,
                                              bool strip) {
-  auto func = [ check, prefix, strip ](Situation s)
-                                          ->std::pair<Either<string>,
-                                                      Situation> {
+  auto func =
+      [ check, prefix, strip ](Situation s)
+                                  ->std::pair<Either<string>, Situation> {
     if (!check(s)) {
       return std::make_pair(nothing, s);
     }

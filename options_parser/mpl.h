@@ -43,9 +43,7 @@ struct rewrap<N, O<T...>> {
   typedef N<T...> type;
 };
 
-constexpr intmax_t amount() {
-  return 0;
-}
+constexpr intmax_t amount() { return 0; }
 
 template <class... T>
 constexpr intmax_t amount(intmax_t h, T... v) {

@@ -215,9 +215,8 @@ struct Parser {
           if (isspace(line[off])) {
             size_t n = off;
             while (n < line.size() && isspace(line[n])) ++n;
-            if (n < line.size() && isupper(line[n])
-                && (n + 1 == line.size()
-                    || !islower(line[n]))) {
+            if (n < line.size() && isupper(line[n]) &&
+                (n + 1 == line.size() || !islower(line[n]))) {
               off = n;
               while (off < line.size() && !isspace(line[off])) ++off;
               continue;

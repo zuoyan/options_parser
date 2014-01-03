@@ -24,7 +24,7 @@ struct state {
   static_assert(!is_state<S>::value, "...");
 
   state() = default;
-  state(const state&) = default;
+  state(const state &) = default;
   // state(state&&) = default;
 
   state &operator=(const state &) = default;
@@ -102,7 +102,7 @@ struct state {
 
   state<V, S> peek() const {
     auto tf = func_;
-    return [tf](const S & s) {
+    return [tf](const S &s) {
       auto r = tf(s);
       r.second = s;
       return r;

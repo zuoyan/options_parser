@@ -25,8 +25,10 @@ inline std::vector<string> break_string(const string &text, size_t width,
       ret.push_back(indent_str + line);
       line.clear();
     }
-    if (line.size()) line += " " + token;
-    else line = token;
+    if (line.size())
+      line += " " + token;
+    else
+      line = token;
   }
   if (line.size()) ret.push_back(indent_str + line);
   return ret;
@@ -34,4 +36,4 @@ inline std::vector<string> break_string(const string &text, size_t width,
 
 }  // namespace line_breaking
 }  // namespace options_parser
-#endif // FILE_C8B83754_2BB1_4F59_9DE9_E4E510196300_H
+#endif  // FILE_C8B83754_2BB1_4F59_9DE9_E4E510196300_H

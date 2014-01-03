@@ -94,7 +94,7 @@ inline Formatter indent(const size_t indent, const Formatter &f) {
 inline Formatter vcat(const std::vector<Formatter> &fs) {
   auto func = [fs](size_t width) {
     std::vector<string> vs;
-    for (const auto& f : fs) {
+    for (const auto &f : fs) {
       auto ls = f(width);
       for (const auto &l : ls) {
         vs.push_back(l);
@@ -112,7 +112,7 @@ inline Formatter vcat(std::vector<Formatter> fs, const Formatter &a,
   return vcat(fs, more...);
 }
 
-template <class H, class...M>
+template <class H, class... M>
 inline Formatter vcat(const H &a, const M &... more) {
   return vcat(std::vector<Formatter>{}, Formatter(a), Formatter(more)...);
 }

@@ -7,7 +7,7 @@
 namespace options_parser {
 typedef std::string string;
 
-inline bool starts_with(const string &s, const string&prefix) {
+inline bool starts_with(const string &s, const string &prefix) {
   return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
 }
 
@@ -25,7 +25,7 @@ inline std::vector<string> split(const string &s, const string &sep,
   return fields;
 }
 
-inline string join(const std::vector<string> &vs, const string& sep) {
+inline string join(const std::vector<string> &vs, const string &sep) {
   string ret;
   for (size_t i = 0; i < vs.size(); ++i) {
     if (i > 0) ret += sep;

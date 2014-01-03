@@ -32,7 +32,7 @@ struct has_operator_to_stream {
       !std::is_same<decltype(deduce<T>((T *)0)), char>::value;
 };
 
-template <class T, class Tag=void>
+template <class T, class Tag = void>
 struct to_stream_impl;
 
 template <class T>

@@ -24,8 +24,7 @@ inline std::vector<string> wordexp(const string& input) {
 }
 #endif
 
-inline std::vector<string> split_space_separated(
-    const string& input) {
+inline std::vector<string> split_space_separated(const string& input) {
   std::vector<string> ret;
   size_t off = 0;
   char quote = 0;
@@ -109,4 +108,4 @@ inline std::vector<string> expand(const string& input) {
 }
 
 }  // namespace options_parser
-#endif // FILE_F7270B23_B818_49F3_B123_1716E9FECE6C_H
+#endif  // FILE_F7270B23_B818_49F3_B123_1716E9FECE6C_H

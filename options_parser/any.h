@@ -56,15 +56,12 @@ struct Any {
   template <class T>
   struct Holder : Interface {
     template <class... Args>
-    Holder(Args&&... args) : value(std::forward<Args>(args)...) {}
+    Holder(Args&&... args)
+        : value(std::forward<Args>(args)...) {}
 
-    virtual Interface* clone() const {
-      return new Holder(value);
-    }
+    virtual Interface* clone() const { return new Holder(value); }
 
-    virtual const std::type_info& type() const {
-      return typeid(T);
-    }
+    virtual const std::type_info& type() const { return typeid(T); }
 
     template <class U>
     typename std::enable_if<has_to_str<U>::value, string>::type to_str_impl(
@@ -87,4 +84,4 @@ struct Any {
 };
 
 }  // namespace options_parser
-#endif // FILE_2D51037C_E4CE_417A_8210_6893881CF367_H
+#endif  // FILE_2D51037C_E4CE_417A_8210_6893881CF367_H

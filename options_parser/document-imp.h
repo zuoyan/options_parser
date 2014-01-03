@@ -4,7 +4,7 @@
 #include "options_parser/converter-imp.h"
 namespace options_parser {
 
-OPTIONS_PARSER_IMP Document::Document() { }
+OPTIONS_PARSER_IMP Document::Document() {}
 
 OPTIONS_PARSER_IMP std::vector<string> Document::format(size_t width) const {
   return format_(width);

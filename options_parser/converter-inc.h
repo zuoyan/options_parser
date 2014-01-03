@@ -20,8 +20,7 @@ struct from_str_impl {
   static Maybe<string> from_str(const string &s, T *p) {
     std::istringstream is(s);
     if (!from_stream(is, p)) {
-      return string("from_str<") + typeid(T).name() + ">(\"" + s +
-             "\") failed";
+      return string("from_str<") + typeid(T).name() + ">(\"" + s + "\") failed";
     }
     if (!is.eof()) {
       std::stringstream t;

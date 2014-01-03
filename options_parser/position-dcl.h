@@ -33,8 +33,7 @@ struct PositionValue {
           value.bind(func), start, end));
 };
 
-inline PositionValue<char> get_char(const Arguments &args,
-                                    const Position &pos);
+inline PositionValue<char> get_char(const Arguments &args, const Position &pos);
 
 inline PositionValue<string> get_arg(const Arguments &args,
                                      const Position &pos);
@@ -57,7 +56,7 @@ state<Either<string>, Situation> match_value(Check check = Check(),
                                              char prefix = '-',
                                              bool strip = false);
 
-template <class T=string, class Check = always_true>
+template <class T = string, class Check = always_true>
 state<Either<Maybe<T>>, Situation> optional_value(Check check = Check()) {
   auto func = [check](Situation s) {
     Either<Maybe<T>> v;

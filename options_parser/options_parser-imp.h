@@ -61,8 +61,7 @@ OPTIONS_PARSER_IMP void Parser::set_description(
   holder_->description = description;
 }
 
-OPTIONS_PARSER_IMP void Parser::set_epilog(
-    const property<string> &epilog) {
+OPTIONS_PARSER_IMP void Parser::set_epilog(const property<string> &epilog) {
   holder_->epilog = epilog;
 }
 
@@ -71,13 +70,9 @@ OPTIONS_PARSER_IMP bool Parser::toggle() {
   return holder_->active;
 }
 
-OPTIONS_PARSER_IMP void Parser::disable() {
-  holder_->active = false;
-}
+OPTIONS_PARSER_IMP void Parser::disable() { holder_->active = false; }
 
-OPTIONS_PARSER_IMP void Parser::enable() {
-  holder_->active = true;
-}
+OPTIONS_PARSER_IMP void Parser::enable() { holder_->active = true; }
 
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   Situation c = s;

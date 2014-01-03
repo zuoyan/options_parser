@@ -12,7 +12,7 @@ namespace options_parser {
 
 struct Arguments {
   Arguments() = default;
-  Arguments(const Arguments&) = default;
+  Arguments(const Arguments &) = default;
   Arguments(Arguments &&o) { std::swap(inst_, o.inst_); }
   Arguments &operator=(const Arguments &o) = default;
   Arguments &operator=(Arguments &&o) = default;

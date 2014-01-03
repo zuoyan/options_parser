@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         if (!arg.size()) return 0;
         std::string choice;
         for (const auto& sub_parser : subs) {
-          const auto & sub = sub_parser.first;
+          const auto& sub = sub_parser.first;
           if (arg.size() < sub.size() && sub.compare(0, arg.size(), arg) == 0) {
             if (choice.size()) return 0;
             choice = sub;
@@ -29,11 +29,11 @@ int main(int argc, char* argv[]) {
       }),
       [&](std::string cmd) {
         if (subs.count(cmd)) {
-                  app.add_parser(subs[cmd], 1);
+          app.add_parser(subs[cmd], 1);
         } else {
-          for (const auto & sub_parser : subs) {
-            if (sub_parser.first.size() > cmd.size()
-                && sub_parser.first.compare(0, cmd.size(), cmd) == 0) {
+          for (const auto& sub_parser : subs) {
+            if (sub_parser.first.size() > cmd.size() &&
+                sub_parser.first.compare(0, cmd.size(), cmd) == 0) {
               app.add_parser(sub_parser.second, 1);
               break;
             }
@@ -74,7 +74,8 @@ int main(int argc, char* argv[]) {
 )FLAGS";
   add.add_flags_lines(options_parser::split(add_flags, "\n"), 4);
 
-  options_parser::Parser commit("commit - Record changes to the repository", "\n");
+  options_parser::Parser commit("commit - Record changes to the repository",
+                                "\n");
   subs["commit"] = commit;
   std::string commit_flags = R"FLAGS(
 -a, --all
@@ -133,7 +134,8 @@ int main(int argc, char* argv[]) {
     options are equivalent to always and never respectively.  )FLAGS";
   status.add_flags_lines(options_parser::split(status_flags, "\n"), 4);
 
-  options_parser::Parser branch("branch - List, create, or delete branches", "\n");
+  options_parser::Parser branch("branch - List, create, or delete branches",
+                                "\n");
   subs["branch"] = branch;
   std::string branch_flags = R"FLAGS(
 -d, --delete

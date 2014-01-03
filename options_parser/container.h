@@ -38,6 +38,6 @@ struct container_traits {
 
 show_type<typename container_traits<int>::iterator_type>();
 
-} // namespace options_parser
+}  // namespace options_parser
 
-#endif // FILE_721CE6EE_5A5B_411F_AC55_C14112DAD511_H
+#endif  // FILE_721CE6EE_5A5B_411F_AC55_C14112DAD511_H

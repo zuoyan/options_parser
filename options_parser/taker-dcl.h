@@ -66,11 +66,10 @@ struct Taker {
     };
   }
 
-  template <class F,
-            typename std::enable_if<
-                !mpl::is_callable<F, const MatchResult &>::value &&
-                    !mpl::is_callable<F, const Situation &>::value,
-                int>::type = 0>
+  template <class F, typename std::enable_if<
+                         !mpl::is_callable<F, const MatchResult &>::value &&
+                             !mpl::is_callable<F, const Situation &>::value,
+                         int>::type = 0>
   Taker(const F &func) {
     take_ = [func, this](const MatchResult &mr) {
       TakeResult tr;

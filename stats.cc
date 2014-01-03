@@ -84,9 +84,8 @@ int main(int argc, char* argv[]) {
       "lot.");
   app.add_help();
   app.add_parser(options_parser::parser());
-  app.add_option("--print-value", [&]() {
-      g_print_value = true;
-    }, "print out every value");
+  app.add_option("--print-value", [&]() { g_print_value = true; },
+                 "print out every value");
 
   app.add_option("--moment NUM", [&](size_t m) {
                                    if (m >= g_sums.size()) {
@@ -101,16 +100,15 @@ int main(int argc, char* argv[]) {
                                           },
                  "Add value from argument");
 
-  app.add_option(
-      "--file FILE", [&](std::string fn) {
-                if (fn.size() && fn != "-") {
-                  std::ifstream ifs(fn);
-                  add_istream(&ifs);
-                } else {
-                  add_istream(&std::cin);
-                }
-              },
-            "Add values from FILE, all non value texts are inogred");
+  app.add_option("--file FILE", [&](std::string fn) {
+                                  if (fn.size() && fn != "-") {
+                                    std::ifstream ifs(fn);
+                                    add_istream(&ifs);
+                                  } else {
+                                    add_istream(&std::cin);
+                                  }
+                                },
+                 "Add values from FILE, all non value texts are inogred");
 
   app.add_option(options_parser::MATCH_POSITION, [&](std::string s) {
                                                    std::istringstream is(s);
