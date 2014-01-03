@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
               },
       "Set an arbitrary configuration option, eg -o dir::cache=/tmp"));
 
-  options_parser::Parser get_cli("apt-get Commands:", "\n");
+  options_parser::Parser get_cli("apt-get Options/Commands:", "\n");
   cli.add_parser(get_cli);
 
   std::vector<std::pair<std::string, std::string>> get_commands{
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
   get_cli.add_option("-V", [&]() { result.push_back("-V"); },
                      "Show verbose version numbers");
 
-  options_parser::Parser cache_cli("apt-cache Commands:", "\n");
+  options_parser::Parser cache_cli("apt-cache Options/Commands:", "\n");
   cli.add_parser(cache_cli);
 
   std::vector<std::pair<std::string, std::string>> cache_commands{

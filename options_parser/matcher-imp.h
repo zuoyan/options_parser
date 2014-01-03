@@ -51,8 +51,8 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
         }
       }
     }
-    if (mfd.is_raw) return mr;
-    if (arg.size() && s.position.off == 0 && starts_with(first_arg, "--")) {
+    if (arg.size() && s.position.off == 0 &&
+        (mfd.is_raw || starts_with(first_arg, "--"))) {
       for (const string &o : mfd.opts) {
         if (arg.size() < o.size() && o.compare(0, arg.size(), arg) == 0) {
           mr.priority = MATCH_PREFIX;
@@ -60,14 +60,13 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
         }
       }
     }
+    if (mfd.is_raw) return mr;
     if (!arg_getter && arg.size() && !starts_with(first_arg, "--")) {
       for (const string &o : mfd.opts) {
-        size_t off = 0;
-        while (off < o.size() && o[off] == '-') ++off;
-        if (o.size() != off + 1) continue;
-        if (arg[0] != o.back()) continue;
+        if (o.size() != 1) continue;
+        if (arg[0] != o[0]) continue;
         mr.priority = MATCH_EXACT;
-        off = s.position.off;
+        size_t off = s.position.off;
         if (off == 0 && off < first_arg.size() && first_arg[off] == '-') ++off;
         ++off;
         if (off < first_arg.size()) {
