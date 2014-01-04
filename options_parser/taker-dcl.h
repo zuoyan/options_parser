@@ -73,7 +73,7 @@ struct Taker {
   Taker(const F &func) {
     take_ = [func, this](const MatchResult &mr) {
       TakeResult tr;
-      auto get_values = tuple_value_indices<
+      auto get_values = value_tuple_indices<
           typename mpl::function_traits<F>::parameters_type>(
           typename mpl::vector_range<mpl::function_traits<F>::nary>::type{});
       auto v_s = get_values.apply(check_invoke(void_wrap(func)))(mr.situation);
@@ -96,6 +96,9 @@ struct Taker {
   static Maybe<string> to_error(int c);
   static Maybe<string> to_error(bool f);
   static Maybe<string> to_error(const string &e);
+
+  template <class T>
+  static Maybe<string> to_error(const std::vector<T> &v);
 
   std::function<TakeResult(const MatchResult &)> take_;
 };

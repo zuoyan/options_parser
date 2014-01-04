@@ -125,7 +125,7 @@ struct Parser {
       }
       if (mfd.num_args == 1) {
         if (mfd.is_arg_optional) {
-          auto v_s = optional_value<T>()(mr.situation);
+          auto v_s = value<T>().optional()(mr.situation);
           tr.situation = v_s.second;
           T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
           if (get_value(v_s.first)) {

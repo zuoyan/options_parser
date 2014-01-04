@@ -192,13 +192,13 @@ struct Matcher {
   }
 
   template <class S, decltype(*(string *)0 = std::declval<S>(), 0) = 0>
-  Matcher(S &&s, Maybe<state<Either<string>, Situation>> arg_getter = nothing) {
+  Matcher(S &&s, Maybe<Value<string>> arg_getter = nothing) {
     MatchFromDescription from_desc(s);
     new (this) Matcher(from_desc, arg_getter);
   }
 
   Matcher(const MatchFromDescription &mfd,
-          Maybe<state<Either<string>, Situation>> arg_getter = nothing);
+          Maybe<Value<string>> arg_getter = nothing);
 
   MatchResult operator()(const Situation &s) const;
 

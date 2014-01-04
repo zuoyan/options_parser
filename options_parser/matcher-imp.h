@@ -17,7 +17,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
 
 OPTIONS_PARSER_IMP Matcher::Matcher(
     const MatchFromDescription &mfd,
-    Maybe<state<Either<string>, Situation>> arg_getter) {
+    Maybe<Value<string>> arg_getter) {
   match_ = [mfd, arg_getter](const Situation &s) {
     std::pair<Either<string>, Situation> m_s;
     if (arg_getter) {
@@ -26,7 +26,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(
       if (mfd.is_raw) {
         m_s = value()(s);
       } else {
-        m_s = match_value(always_true{}, '-', true)(s);
+        m_s = match_value('-', true)(s);
       }
     }
     MatchResult mr;

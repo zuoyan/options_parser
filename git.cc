@@ -4,8 +4,10 @@
 
 int main(int argc, char* argv[]) {
   options_parser::Parser app("test git like commands", "...");
+  // link to global parser
   app.add_parser(options_parser::parser());
-  app.add_help("--help");
+  app.add_help("--help");  // only --help, no -h
+  // This's demo only, so just capture the flags, no actions.
   app.add_flag("--version", "Print version and exit");
   app.add_flag("-C <path>", "Run as if git was started ...");
 

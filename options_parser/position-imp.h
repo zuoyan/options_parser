@@ -61,5 +61,18 @@ OPTIONS_PARSER_IMP PositionValue<string> get_match_arg(const Arguments &args,
   return r;
 }
 
+OPTIONS_PARSER_IMP Value<string> match_value(char prefix, bool strip) {
+  auto func = [ prefix, strip ](Situation s)
+                                   ->std::pair<Either<string>, Situation> {
+    auto r = get_match_arg(s.args, s.position, prefix, strip);
+    s.position = r.end;
+    if (r.value) {
+      return std::make_pair(*r.value.get(), s);
+    }
+    return std::make_pair(error_message("no arguments rest"), s);
+  };
+  return func;
+}
+
 }  // namespace options_parser
 #endif  // FILE_86B02CB4_542A_4720_B778_ECBACC21EAB0_H

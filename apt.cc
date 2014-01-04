@@ -196,9 +196,9 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  options_parser::many(options_parser::value().apply([&](std::string arg) {
-    result.push_back(arg);
-  }))(parse_result.situation);
+  options_parser::value()
+      .apply([&](std::string arg) { result.push_back(arg); })
+      .many()(parse_result.situation);
 
   if (print_args) {
     for (auto c : result) {

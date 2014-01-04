@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
                  "Take and print the two arguments");
 
   app.add_option("--value-ab A B",
-                 gather(value(), value())
+                 value_gather(value(), value())
                      .apply(check_invoke([](std::string a, std::string b) {
                         std::cerr << "value-ab a " << a << std::endl;
                         std::cerr << "value-ab b " << b << std::endl;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
                  "one integer");
 
   app.add_option("--all-int <integer>...",
-                 many(value<int>(), 1, 4).apply([](std::vector<int> vs) {
+                 value<int>().many(1, 4).apply([](std::vector<int> vs) {
                    for (size_t i = 0; i < vs.size(); ++i) {
                      std::cerr << "all-int " << i << " value " << vs[i]
                                << std::endl;
@@ -141,7 +141,38 @@ int main(int argc, char *argv[]) {
                  [&](std::string fn) { app.add_flags_file(fn); },
                  "Add flag according help message");
 
+  app.add_option("--files FILE...",
+                 value()
+                     .not_option()
+                     .apply([](std::string fn) {
+                        std::cerr << "--files take file: " << fn << std::endl;
+                      })
+                     .many(),
+                 "all following non-empty arguments not starting with '-' are"
+                 " taken as FILE");
+
+  app.add_option(
+      "--env-run <name=value>... <--sep> <cmd-arg>... <--sep>",
+      value_gather(value().not_option().many(),
+                   value().argument_bind([&](std::string sep) {
+                     return [sep](Situation s) {
+                       auto v_s = value()
+                                      .argument_check([sep](std::string a) {
+                                         return a != sep;
+                                       })
+                                      .many()(s);
+                       auto drop_s = value()(v_s.second);
+                       return std::make_pair(v_s.first, drop_s.second);
+                     };
+                   })).apply(check_invoke([](std::vector<std::string> envs,
+                                             std::vector<std::string> args) {
+        std::cerr << "env-run envs " << join(envs, " | ") << std::endl;
+        std::cerr << "env-run args " << join(args, " | ") << std::endl;
+      })),
+      "Run <cmd-arg>... with environments <name=value>...");
+
   auto parse_result = app.parse(argc, argv);
+
   if (getenv("OPTIONS_PARSER_a1dd2545_588d_4fff_9914_30f352434d67")) {
     app.parse_string("--help");
   }
