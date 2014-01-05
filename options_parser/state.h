@@ -57,29 +57,21 @@ struct state {
     return [v](const S &s) { return std::make_pair(v, s); };
   }
 
-  template <class F>
-  typename Rebind::template rebind<
-      typename mpl::is_callable<typename mpl::is_callable<F, V>::result_type,
-                                S>::result_type::first_type,
-      S>::type
-  bind(const F &func) const {
+  template <class F, class FR = decltype(get_value(options_parser::apply(
+                         std::declval<F>(), get_value(std::declval<V>())))(
+                         std::declval<S>()).first)>
+  typename Rebind::template rebind<FR, S>::type bind(const F &func) const {
     auto tf = func_;
-    return [func, tf](const S &s) {
+    auto lf = [ func, tf ](const S & s)->std::pair<FR, S> {
       auto v_s = tf(s);
-      return func(v_s.first)(v_s.second);
+      auto e = get_error(v_s.first);
+      if (e) return std::make_pair(error_message(*e.get()), v_s.second);
+      auto fr = func(get_value(v_s.first));
+      auto fe = get_error(fr);
+      if (fe) return std::make_pair(error_message(*fe.get()), v_s.second);
+      return get_value(fr)(v_s.second);
     };
-  }
-
-  template <class F, typename std::enable_if<mpl::is_callable<F, V, S>::value,
-                                             int>::type = 0>
-  typename Rebind::template rebind<
-      typename mpl::is_callable<F, V, S>::result_type::first_type, S>::type
-  bind(const F &func) const {
-    auto tf = func_;
-    return [func, tf](const S &s) {
-      auto v_s = tf(s);
-      return func(v_s.first, v_s.second);
-    };
+    return lf;
   }
 
   template <class F>
@@ -93,16 +85,27 @@ struct state {
     };
   }
 
-  template <class F>
-  typename Rebind::template rebind<Maybe<V>, S>::type check(
-      const F &func) {
-    auto tf = func_;
-    return bind([ func, tf ](const S & s)->std::pair<Maybe<V>, S> {
-      auto v_s = tf(s);
-      if (options_parser::apply(func, v_s.first)) {
-        return std::make_pair(v_s.first, v_s.second);
+  template <class F, class = typename std::enable_if<
+                         mpl::is_callable<F, V>::value>::type>
+  typename Rebind::template rebind<Maybe<V>, S>::type check(const F &func) {
+    return apply([func](const V & v)
+                     ->Maybe<V> { return func(v) ? v : nothing; });
+  }
+
+  template <class F, class = typename std::enable_if<
+                         !mpl::is_callable<F, V>::value>::type>
+  typename Rebind::template rebind<V, S>::type check(const F &func,
+                                                     const string &message =
+                                                         "check failed") {
+    return apply([ func, message ](const V & v) -> V {
+      auto e = get_error(v);
+      if (e) {
+        return v;
       }
-      return std::make_pair(nothing, s);
+      if (func(get_value(v))) {
+        return v;
+      }
+      return error_message(message);
     });
   }
 

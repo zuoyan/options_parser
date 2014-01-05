@@ -154,13 +154,12 @@ int main(int argc, char *argv[]) {
   app.add_option(
       "--env-run <name=value>... <--sep> <cmd-arg>... <--sep>",
       value_gather(value().not_option().many(),
-                   value().argument_bind([&](std::string sep) {
+                   value().bind([&](std::string sep) {
                      return [sep](Situation s) {
-                       auto v_s = value()
-                                      .argument_check([sep](std::string a) {
-                                         return a != sep;
-                                       })
-                                      .many()(s);
+                       auto v_s =
+                           value()
+                               .check([sep](std::string a) { return a != sep; })
+                               .many()(s);
                        auto drop_s = value()(v_s.second);
                        return std::make_pair(v_s.first, drop_s.second);
                      };

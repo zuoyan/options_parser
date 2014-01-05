@@ -99,34 +99,6 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     });
   }
 
-  template <class Check>
-  Value argument_check(const Check &func,
-                       const string &message = "argument_check failed") const {
-    auto tf = this->func_;
-    return Value([ tf, func, message ](Situation s)->std::pair<Either<T>, Situation> {
-      auto v_s = tf(s);
-      auto e = get_error(v_s.first);
-      if (e) return v_s;
-      if (options_parser::apply(func, get_value(v_s.first))) {
-        return v_s;
-      }
-      return std::make_pair(error_message(message), s);
-    });
-  }
-
-  template <class Func,
-            class R = decltype(get_value(std::declval<Func>()(
-                std::declval<T>())(std::declval<Situation>()).first))>
-  Value<R> argument_bind(const Func &func) const {
-    auto tf = this->func_;
-    return Value<R>([ tf, func ](Situation s)->std::pair<Either<R>, Situation> {
-      auto v_s = tf(s);
-      auto e = get_error(v_s.first);
-      if (e) return std::make_pair(error_message(*e.get()), v_s.second);
-      return options_parser::apply(func, get_value(v_s.first))(v_s.second);
-    });
-  }
-
   Value not_option() const {
     return situation_check([](Situation s) {
       if (s.position.off > 0) return true;
