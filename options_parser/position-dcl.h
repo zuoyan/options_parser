@@ -64,7 +64,17 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
   typedef state<Either<T>, Situation, ValueRebind> base;
   typedef T inner_value_type;
 
-  using base::base;
+  template <class F,
+            typename std::enable_if<
+                std::is_convertible<decltype(std::declval<F>()(
+                                        std::declval<Situation>()).first),
+                                    Either<T>>::value,
+                int>::type = 0>
+  Value(const F &func)
+      : base(func) {}
+
+  Value(const Value&) = default;
+  Value &operator=(const Value &) = default;
 
   Value() {
     this->func_ = [](Situation s)->std::pair<Either<T>, Situation> {
@@ -82,9 +92,6 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
       return std::make_pair(val, s);
     };
   }
-
-  Value(const Value&) = default;
-  Value &operator=(const Value &) = default;
 
   template <class Check>
   Value situation_check(const Check &func,
@@ -152,7 +159,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     return func;
   }
 
-  auto times(size_t n) const OPTIONS_PARSER_AUTO_RETURN(this -> many(n, n));
+  Value<std::vector<T>> times(size_t n) const { return many(n, n); }
 };
 
 template <class T=string>
@@ -208,14 +215,14 @@ struct value_gather_tuple_impl {
   }
 };
 
-template <class... States>
-auto value_gather_tuple(const std::tuple<States...> &states)
+template <class... State>
+auto value_gather_tuple(const std::tuple<State...> &states)
     OPTIONS_PARSER_AUTO_RETURN(
-        value_gather_tuple_impl::value_gather_tuple(states));
+        value_gather_tuple_impl::value_gather_tuple<State...>(states));
 
 template <class... States>
-auto value_gather(const States &... states)
-    OPTIONS_PARSER_AUTO_RETURN(value_gather_tuple(std::make_tuple(states...)));
+auto value_gather(const States &... states) OPTIONS_PARSER_AUTO_RETURN(
+    value_gather_tuple<States...>(std::make_tuple(states...)));
 
 template <class T, int... I>
 auto value_tuple_indices(mpl::vector_c<I...>) OPTIONS_PARSER_AUTO_RETURN(
