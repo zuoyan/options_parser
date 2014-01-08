@@ -62,18 +62,9 @@ struct ValueRebind {
 template <class T>
 struct Value : state<Either<T>, Situation, ValueRebind> {
   typedef state<Either<T>, Situation, ValueRebind> base;
+  using base::base;
+
   typedef T inner_value_type;
-
-  template <class F,
-            typename std::enable_if<
-                std::is_convertible<decltype(std::declval<F>()(
-                                        std::declval<Situation>()).first),
-                                    Either<T>>::value,
-                int>::type = 0>
-  Value(const F &func)
-      : base(func) {}
-
-  Value(const Value&) = default;
   Value &operator=(const Value &) = default;
 
   Value() {
