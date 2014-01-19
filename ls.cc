@@ -131,14 +131,7 @@ int main(int argc, char* argv[]) {
   app.add_help("--help");
 
   auto parse_result = app.parse(argc, argv);
-
-  if (parse_result.error) {
-    std::cerr << *parse_result.error.get() << std::endl;
-    if (parse_result.error_full) {
-      std::cerr << *parse_result.error_full.get() << std::endl;
-    }
-    return 1;
-  }
+  parse_result.check_print();
 
   std::cout << parse_result.situation.circumstance.to_str() << std::endl;
 

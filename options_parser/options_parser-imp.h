@@ -9,6 +9,21 @@
 
 namespace options_parser {
 
+bool ParseResult::check_print(bool all, int code) const {
+  if (error) {
+    string es = *error.get();
+    if (es != "match-none" || all) {
+      std::cerr << "parsing arguments got error: " << es << std::endl;
+      if (error_full) {
+        std::cerr << *error_full.get() << std::endl;
+      }
+      if (code != -1) exit(code);
+    }
+    return false;
+  }
+  return true;
+}
+
 OPTIONS_PARSER_IMP Option::Option() {
   active = true;
   help_level = 0;

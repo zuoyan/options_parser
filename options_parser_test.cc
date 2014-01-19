@@ -172,13 +172,9 @@ int main(int argc, char *argv[]) {
   if (getenv("OPTIONS_PARSER_a1dd2545_588d_4fff_9914_30f352434d67")) {
     app.parse_string("--help");
   }
-  if (parse_result.error) {
-    std::cerr << *parse_result.error.get() << std::endl;
-    if (parse_result.error_full) {
-      std::cerr << *parse_result.error_full.get() << std::endl;
-    }
-    return 1;
-  }
+
+  parse_result.check_print();
+
   std::cerr << "int_value " << int_value << std::endl;
   std::cerr << "flag " << flag << std::endl;
   std::cerr << "flag_int " << FLAGS_flag_int << std::endl;

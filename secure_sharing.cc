@@ -706,17 +706,7 @@ int main(int argc, char* argv[]) {
   app.add_option("-c, --combine, -r, --recover", [&]() { do_combine = true; },
                  "combine every parts to recover whole file");
 
-  auto parse_result = app.parse(argc, argv);
-
-  if (parse_result.error) {
-    std::cerr << "parse arguments got error: " << *parse_result.error.get()
-              << std::endl;
-    if (parse_result.error_full) {
-      std::cerr << "details:" << std::endl << *parse_result.error_full.get()
-                << std::endl;
-    }
-    return 1;
-  }
+  app.parse(argc, argv).check_print();
 
   if ((int)do_split + (int)do_combine != 1) {
     std::cerr << "split or combine, choose one" << std::endl;

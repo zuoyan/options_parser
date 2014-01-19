@@ -177,13 +177,7 @@ int main(int argc, char *argv[]) {
     std::swap(ac, result_command);
   }
 
-  if (parse_result.error && *parse_result.error.get() != "match-none") {
-    std::cerr << *parse_result.error.get() << std::endl;
-    if (parse_result.error_full) {
-      std::cerr << *parse_result.error_full.get() << std::endl;
-    }
-    return 1;
-  }
+  parse_result.check_print(false);
 
   if (!result_command.size()) {
     std::cerr << "give me a command ..." << std::endl;

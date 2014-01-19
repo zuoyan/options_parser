@@ -41,6 +41,8 @@ struct ParseResult {
   Situation situation;
   Maybe<string> error;
   Maybe<string> error_full;
+
+  bool check_print(bool all = true, int code = 1) const;
 };
 
 struct Parser {
@@ -72,7 +74,7 @@ struct Parser {
     return parse(s);
   }
 
-  inline ParseResult parse(const std::vector<string> argv, size_t off = 1,
+  inline ParseResult parse(const std::vector<string> &argv, size_t off = 1,
                            Circumstance circumstance = Circumstance()) {
     Situation s;
     s.args = VectorStringArguments(argv);
