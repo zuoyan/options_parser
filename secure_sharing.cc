@@ -576,9 +576,9 @@ int main(int argc, char* argv[]) {
       " Or, in reverse, it can recover a message from K parts after splitting."
       " Every part has a unique code, which should be given explicitly.\n"
       "Usage:\n"
-      "  secure_sharing -K NUM whole-file part-pattern --split\n"
-      "  secure_sharing -K NUM whole-file part-pattern --combine\n"
-      "Where part-pattern looks like 'file-prefix[001-13]postfix, the code"
+      "  secure_sharing -K NUM <whole file> <part pattern> --split\n"
+      "  secure_sharing -K NUM <whole file> <part pattern> --combine\n"
+      "Where <part pattern> looks like 'file-prefix[001-013]postfix, the code"
       " range '[001-013]' is expanded to 001, 002, 003, ..., 013'.\n"
       "\n",
       "Examples:\n"
