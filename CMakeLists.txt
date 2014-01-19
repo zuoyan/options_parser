@@ -4,8 +4,12 @@ PROJECT(options_parser)
 SET(CMAKE_INCLUDE_CURRENT_DIR 1)
 
 SET(CMAKE_CXX_FLAGS "-Wall -std=c++0x")
-SET(CMAKE_CXX_FLAGS_DEBUG "-Wall -std=c++0x -O0 -g -fno-inline")
-SET(CMAKE_CXX_FLAGS_RELEASE "-Wall -std=c++0x -O3 -march=native")
+SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -fno-inline")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+
+IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+ENDIF()
 
 ADD_LIBRARY(options_parser SHARED options_parser/options_parser_lib.cc)
 
