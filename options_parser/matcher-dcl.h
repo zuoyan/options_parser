@@ -90,7 +90,7 @@ struct MatchFromDescription {
             continue;
           }
           size_t n = off;
-          while (n < s.size() && !isspace(s[n]) && s[n] != '[' && s[n] != '=') {
+          while (n < s.size() && !isspace(s[n]) && !strchr("[]=,", s[n])) {
             ++n;
           }
           ret.push_back(s.substr(off, n - off));

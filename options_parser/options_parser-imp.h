@@ -22,13 +22,22 @@ OPTIONS_PARSER_IMP Option::Option(Matcher m, Taker t, Document d)
   priority = 0;
 }
 
+OPTIONS_PARSER_IMP Taker taker_restart_match(Taker t) {
+  return [t](MatchResult mr) {
+    mr.situation.position = mr.start;
+    return t(mr);
+  };
+}
+
 OPTIONS_PARSER_IMP Taker bundle(const std::vector<Option> &options) {
   return [options](const MatchResult &mr) {
     TakeResult tr;
+    Situation s = mr.situation;
+    s.position = mr.start;
     std::vector<std::pair<size_t, MatchResult>> mrs;
     for (size_t i = 0; i < options.size(); ++i) {
       auto &opt = options[i];
-      auto cmr = opt.match(mr.situation);
+      auto cmr = opt.match(s);
       if (cmr.priority) {
         mrs.push_back(std::make_pair(i, cmr));
       }

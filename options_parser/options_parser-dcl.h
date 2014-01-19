@@ -33,6 +33,8 @@ struct Option {
   Option(Matcher m, Taker t, Document d);
 };
 
+Taker taker_restart_match(Taker t);
+
 Taker bundle(const std::vector<Option> &options);
 
 struct ParseResult {

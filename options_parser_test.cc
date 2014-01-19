@@ -84,18 +84,15 @@ int main(int argc, char *argv[]) {
       "--int <int>", &int_value,
       "Current: " + delay_to_str(&int_value) + "\nSet integer value.");
 
-  app.add_option("--no-flag, --flag, --flag-on, --flag-off",
-                 bundle({{"--flag", [&]() { flag = true; }, {}},
-                         {"--no-flag", [&]() { flag = false; }, {}},
-                         {"--flag-on", [&]() { flag = true; }, {}},
-                         {"--flag-off", [&]() { flag = false; }, {}}}),
-                 "turn flag on or off");
+  app.add_option(
+      "--no-flag, --flag, --flag-on, --flag-off",
+      bundle({{"--flag, --flag-on", [&]() { flag = true; }, {}},
+              {"--no-flag, --flag-off", [&]() { flag = false; }, {}}}),
+      "turn flag on or off");
 
   app.add_option("|no-flag|flag|flag-on|flag-off",
-                 bundle({{"|flag", [&]() { flag = true; }, {}},
-                         {"|no-flag", [&]() { flag = true; }, {}},
-                         {"|flag-on", [&]() { flag = true; }, {}},
-                         {"|flag-off", [&]() { flag = true; }, {}}}),
+                 bundle({{"|flag|flag-on", [&]() { flag = true; }, {}},
+                         {"|no-flag|flag-off", [&]() { flag = false; }, {}}}),
                  {"flag, no-flag, flag-on, flag-off", [&]() {
                    return std::string("Current: ") + to_str(flag) +
                           "\nturn flag on or off";

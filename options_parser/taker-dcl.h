@@ -57,7 +57,7 @@ struct Taker {
             typename std::enable_if<
                 mpl::is_callable<F, const Situation &>::value, int>::type = 0>
   Taker(const F &func) {
-    take_ = [func, this](const MatchResult &mr) {
+    take_ = [func](const MatchResult &mr) {
       TakeResult tr;
       auto v_s = func(mr.situation);
       tr.situation = v_s.second;
@@ -71,7 +71,7 @@ struct Taker {
                              !mpl::is_callable<F, const Situation &>::value,
                          int>::type = 0>
   Taker(const F &func) {
-    take_ = [func, this](const MatchResult &mr) {
+    take_ = [func](const MatchResult &mr) {
       TakeResult tr;
       auto get_values = value_tuple_indices<
           typename mpl::function_traits<F>::parameters_type>(
