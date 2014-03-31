@@ -13,12 +13,13 @@ void add_value(double x) {
     std::cout << "value:" << x << std::endl;
   }
   if (!g_sums.size()) return;
+  double pgs = g_sums[0];
   double a = 1;
   for (size_t i = 0; i < g_sums.size(); ++i) {
     g_sums[i] += a;
     a *= x;
   }
-  if (g_sums[0]) {
+  if (pgs) {
     g_min = std::min(g_min, x);
     g_max = std::max(g_max, x);
   } else {
