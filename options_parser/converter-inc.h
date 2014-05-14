@@ -36,6 +36,7 @@ struct from_str_impl {
 
 template <class T>
 Maybe<string> from_str(const string &s, T *p) {
+  static_assert(!std::is_same<T, string>::value, "not string ...");
   return from_str_impl<T>::from_str(s, p);
 }
 

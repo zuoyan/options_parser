@@ -46,7 +46,7 @@ struct Taker {
       auto v_s = value()(mr.situation);
       tr.error = get_error(v_s.first);
       if (!tr.error) {
-        tr.error = from_str<T>(get_value(v_s.first), ptr);
+        tr.error = from_str(get_value(v_s.first), ptr);
       }
       tr.situation = v_s.second;
       return tr;

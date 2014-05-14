@@ -2,182 +2,160 @@
 #include <cassert>
 
 #include "options_parser/options_parser_lib.h"
+#include "clog/clog.hpp"
 
-using namespace options_parser;
+struct Test {
+  virtual void Run() = 0;
+};
 
-OPTIONS_PARSER_FLAGS_DEFINE(int, flag_int, 0, "A flag of int type");
+std::map<std::string, std::unique_ptr<Test>> tests;
 
-int main(int argc, char *argv[]) {
-  Parser app(
-      std::string("Test options parser.\n") + "Usage: " + argv[0] +
-          " [<options>]\n"
-          "            sub [<sub options>] [--]\n"
-          "Sed ut perspiciatis, unde omnis iste natus error sit voluptatem "
-          "accusantium doloremque laudantium, totam rem aperiam eaque ipsa, "
-          "quae ab illo inventore veritatis et quasi architecto beatae vitae "
-          "dicta sunt, explicabo. Nemo enim ipsam voluptatem, quia voluptas "
-          "sit, aspernatur aut odit aut fugit, sed quia consequuntur magni "
-          "dolores eos, qui ratione voluptatem sequi nesciunt, neque porro "
-          "quisquam est, qui dolorem ipsum, quia dolor sit amet consectetur "
-          "adipisci[ng] velit, sed quia non numquam [do] eius modi tempora "
-          "inci[di]dunt, ut labore et dolore magnam aliquam quaerat "
-          "voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem "
-          "ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi "
-          "consequatur? Quis autem vel eum iure reprehenderit, qui in ea "
-          "voluptate velit esse, quam nihil molestiae consequatur, vel illum, "
-          "qui dolorem eum fugiat, quo voluptas nulla pariatur?\n\n",
-      "This's options parse following a state monad design.\n"
-      "At vero eos et accusamus et iusto odio dignissimos ducimus, qui "
-      "blanditiis praesentium voluptatum deleniti atque corrupti, quos "
-      "dolores et quas molestias excepturi sint, obcaecati cupiditate "
-      "non provident, similique sunt in culpa, qui officia deserunt "
-      "mollitia animi, id est laborum et dolorum fuga. Et harum quidem "
-      "rerum facilis est et expedita distinctio. Nam libero tempore, "
-      "cum soluta nobis est eligendi optio, cumque nihil impedit, quo "
-      "minus id, quod maxime placeat, facere possimus, omnis voluptas "
-      "assumenda est, omnis dolor repellendus. Temporibus autem "
-      "quibusdam et aut officiis debitis aut rerum necessitatibus saepe "
-      "eveniet, ut et voluptates repudiandae sint et molestiae non "
-      "recusandae. Itaque earum rerum hic tenetur a sapiente delectus, "
-      "ut aut reiciendis voluptatibus maiores alias consequatur aut "
-      "perferendis doloribus asperiores repellat…");
-  app.add_parser(options_parser::parser());
+struct test_register {
+  template <class T>
+  test_register(const std::string& name, const T& v) {
+    tests[name].reset(new T(v));
+  }
+};
 
-  app.add_option("--config-file FILE", &options_parser::take_config_file,
-                 "parse options from FILE");
+#define TEST(NAME)                                                          \
+  struct PP_CAT(Test, NAME) : Test {                                        \
+    void Run() override;                                                    \
+  };                                                                        \
+  test_register PP_CAT(test_register_, NAME)(#NAME, PP_CAT(Test, NAME) {}); \
+  void PP_CAT(Test, NAME)::Run()
 
-  Parser sub("\nsub command and options\n",
-             "Using -- to toggle sub option off.\n\n");
-
-  app.add_parser(sub, 1);
-  sub.toggle();
-
-  Matcher m(value().apply([](std::string a) { return a == "sub" ? 1 : 0; }));
-
-  app.add_option(
-      value().apply([](std::string a) { return a == "sub" ? 1 : 0; }),
-      [&]() { sub.enable(); }, {"sub", "toggle sub command on"});
-
-  sub.add_option(value().apply([](std::string a) { return a == "--" ? 1 : 0; }),
-                 [&]() { sub.disable(); },
-                 {"--", "close sub command"})->help_level = 10000;
-  sub.add_help();
-
-  sub.add_option("--sub-ab <str> <str>", [](std::string a, std::string b) {
-                                           std::cout << "sub-ab got arg " << a
-                                                     << " and " << b
-                                                     << std::endl;
-                                         },
-                 "print and eat the following two arguments");
-
-  sub.add_option(
-      "-a <str>",
-      [](std::string a) { std::cout << "a in sub got arg " << a << std::endl; },
-      "print and eat the following argument");
-
-  int int_value = 13;
-  bool flag = false;
-
-  app.add_help();
-
-  app.add_option(
-      "--int <int>", &int_value,
-      "Current: " + delay_to_str(&int_value) + "\nSet integer value.");
-
-  app.add_option(
-      "--no-flag, --flag, --flag-on, --flag-off",
-      bundle({{"--flag, --flag-on", [&]() { flag = true; }, {}},
-              {"--no-flag, --flag-off", [&]() { flag = false; }, {}}}),
-      "turn flag on or off");
-
-  app.add_option("|no-flag|flag|flag-on|flag-off",
-                 bundle({{"|flag|flag-on", [&]() { flag = true; }, {}},
-                         {"|no-flag|flag-off", [&]() { flag = false; }, {}}}),
-                 {"flag, no-flag, flag-on, flag-off", [&]() {
-                   return std::string("Current: ") + to_str(flag) +
-                          "\nturn flag on or off";
-                 }});
-
-  app.add_option("--func <str> <str>", [](std::string a, std::string b) {
-                                         std::cout << "func got arg " << a
-                                                   << " and " << b << std::endl;
-                                       },
-                 "Take and print the two arguments");
-
-  app.add_option("--func-si <str> <int>", [](std::string a, int b) {
-                                            std::cout << "func-si got arg " << a
-                                                      << " and " << b
-                                                      << std::endl;
-                                          },
-                 "Take and print the two arguments");
-
-  app.add_option("--value-ab A B",
-                 value_gather(value(), value())
-                     .apply(check_invoke([](std::string a, std::string b) {
-                        std::cerr << "value-ab a " << a << std::endl;
-                        std::cerr << "value-ab b " << b << std::endl;
-                      })),
-                 "take and print the two arguments");
-
-  app.add_option("--one-int <integer>", value<int>().apply([](int v) {
-                                          std::cerr << "one-int " << v
-                                                    << std::endl;
-                                        }),
-                 "one integer");
-
-  app.add_option("--all-int <integer>...",
-                 value<int>().many(1, 4).apply([](std::vector<int> vs) {
-                   for (size_t i = 0; i < vs.size(); ++i) {
-                     std::cerr << "all-int " << i << " value " << vs[i]
-                               << std::endl;
-                   }
-                 }),
-                 "all following integers");
-
-  app.add_option("--flag-file FILE",
-                 [&](std::string fn) { app.add_flags_file(fn); },
-                 "Add flag according help message");
-
-  app.add_option("--files FILE...",
-                 value()
-                     .not_option()
-                     .apply([](std::string fn) {
-                        std::cerr << "--files take file: " << fn << std::endl;
-                      })
-                     .many(),
-                 "all following non-empty arguments not starting with '-' are"
-                 " taken as FILE");
-
-  app.add_option(
-      "--env-run <name=value>... <--sep> <cmd-arg>... <--sep>",
-      value_gather(value().not_option().many(),
-                   value().bind([&](std::string sep) {
-                     return [sep](Situation s) {
-                       auto v_s =
-                           value()
-                               .check([sep](std::string a) { return a != sep; })
-                               .many()(s);
-                       auto drop_s = value()(v_s.second);
-                       return std::make_pair(v_s.first, drop_s.second);
-                     };
-                   })).apply(check_invoke([](std::vector<std::string> envs,
-                                             std::vector<std::string> args) {
-        std::cerr << "env-run envs " << join(envs, " | ") << std::endl;
-        std::cerr << "env-run args " << join(args, " | ") << std::endl;
-      })),
-      "Run <cmd-arg>... with environments <name=value>...");
-
-  auto parse_result = app.parse(argc, argv);
-
-  if (getenv("OPTIONS_PARSER_a1dd2545_588d_4fff_9914_30f352434d67")) {
-    app.parse_string("--help");
+#define CHECK_PARSE_RESULT(PR, ERROR, INDEX, OFF, ...)                    \
+  {                                                                       \
+    std::string error = ERROR;                                            \
+    if (error.size()) {                                                   \
+      if (PR.error) {                                                     \
+        std::string es = *PR.error.get();                                 \
+        CLOG_CHECK_EQ(error, es, ##__VA_ARGS__);                          \
+      } else {                                                            \
+        CLOG(FATAL, "expect a error", error, ##__VA_ARGS__);              \
+      }                                                                   \
+    } else {                                                              \
+      CLOG_CHECK(!PR.error, "got error", *PR.error.get(), ##__VA_ARGS__); \
+    }                                                                     \
+    CLOG_CHECK_EQ(PR.situation.position.index, INDEX, ##__VA_ARGS__);     \
+    CLOG_CHECK_EQ(PR.situation.position.off, OFF, ##__VA_ARGS__);         \
   }
 
-  parse_result.check_print();
+#define CHECK_PARSE(PARSER, STR, ERROR, INDEX, OFF, ...)          \
+  {                                                               \
+    auto pr = PARSER.parse_string(STR);                           \
+    CHECK_PARSE_RESULT(pr, ERROR, INDEX, OFF, "when parse", STR); \
+  }
 
-  std::cerr << "int_value " << int_value << std::endl;
-  std::cerr << "flag " << flag << std::endl;
-  std::cerr << "flag_int " << FLAGS_flag_int << std::endl;
-  std::cout << "circumstance:" << parse_result.situation.circumstance.to_str()
-            << std::endl;
+TEST(Basic) {
+  options_parser::Parser parser;
+  CHECK_PARSE(parser, "--help", "match-none", 0, 0);
+  CHECK_PARSE(parser, "", "", 0, 0);
+  int vi = 0;
+  parser.add_option("--int-value <integer value>", &vi, "integer value");
+  CHECK_PARSE(parser, "--int-value 13", "", 2, 0);
+  CLOG_CHECK_EQ(vi, 13);
+  CHECK_PARSE(parser, "--int-value 26 --int 39", "", 4, 0);
+  CLOG_CHECK_EQ(vi, 39);
+  CHECK_PARSE(parser, "--int-value 52 --int-values 65", "match-none", 2, 0);
+  CLOG_CHECK_EQ(vi, 52);
+  CHECK_PARSE(parser, "--int-value 78a", "take-error", 0, 0);
+  std::string vs;
+  parser.add_option("--str-value <string value>", &vs, "string value");
+  CHECK_PARSE(parser, "--str-value a-string", "", 2, 0);
+  CLOG_CHECK_EQ(vs, "a-string");
+  CHECK_PARSE(parser, "--str-value 'a string value'", "", 2, 0);
+  CLOG_CHECK_EQ(vs, "a string value");
+  CHECK_PARSE(parser, "--int 81 --str 'a string'", "", 4, 0);
+  CLOG_CHECK_EQ(vi, 81);
+  CLOG_CHECK_EQ(vs, "a string");
+}
+
+TEST(Function) {
+  options_parser::Parser parser;
+  double va;
+  std::string vb;
+  int vc;
+  parser.add_option("--func A B C", [&](double a, std::string b, int c) {
+      va = a;
+      vb = b;
+      vc = c;
+    }, "function a b c");
+  CHECK_PARSE(parser, "--func 3.14 'b value' 17", "", 4, 0);
+  CLOG_CHECK_EQ(va, 3.14);
+  CLOG_CHECK_EQ(vb, "b value");
+  CLOG_CHECK_EQ(vc, 17);
+  CHECK_PARSE(parser, "--func 3.14 'b value'", "take-error", 0, 0);
+}
+
+TEST(SubParser) {
+  options_parser::Parser parser, sub;
+  parser.add_parser(sub);
+  std::string sub_value;
+  sub.add_option("--opt <value>", &sub_value, "");
+  CHECK_PARSE(parser, "--opt 'a sub'", "", 2, 0);
+  CLOG_CHECK_EQ(sub_value, "a sub");
+  std::string opt_value;
+  parser.add_option("--opt <value>", &opt_value, "");
+  CHECK_PARSE(parser, "--opt 'a opt'", "match-multiple", 0, 0);
+}
+
+TEST(SubParserPriority) {
+  options_parser::Parser parser, sub;
+  parser.add_parser(sub, -1);
+  std::string sub_value, opt_value;
+  sub.add_option("--opt <value>", &sub_value, "");
+  parser.add_option("--opt <value>", &opt_value, "");
+  CHECK_PARSE(parser, "--opt 'a opt'", "", 2, 0);
+  CLOG_CHECK_EQ(opt_value, "a opt");
+  CLOG_CHECK_EQ(sub_value, "");
+}
+
+TEST(Flags) {
+  options_parser::Parser parser;
+  std::string flags = R"FLAGS(
+-a, --all                  do not ignore entries starting with .
+-A, --almost-all           do not list implied . and ..
+    --author               with -l, print the author of each file
+-b, --escape               print C-style escapes for nongraphic characters
+    --block-size=SIZE      scale sizes by SIZE before printing them.  E.g.,
+                             `--block-size=M' prints sizes in units of
+                             1,048,576 bytes.  See SIZE format below.
+-B, --ignore-backups       do not list implied entries ending with ~
+-c                         with -lt: sort by, and show, ctime (time of last
+                             modification of file status information)
+                             with -l: show ctime and sort by name
+                             otherwise: sort by ctime, newest first
+-C                         list entries by columns
+    --color[=WHEN]         colorize the output.  WHEN defaults to `always'
+                             or can be `never' or `auto'.  More info below
+-d, --directory            list directory entries instead of contents,
+                             and do not dereference symbolic links
+-D, --dired                generate output designed for Emacs' dired mode
+)FLAGS";
+  parser.add_flags_lines(options_parser::split(flags, "\n"));
+  CHECK_PARSE(parser,
+              "--all -a -A --almost-all --author -b --escape --block-size size "
+              "-B --ignore-backups -c -C --color=when -d --dired",
+              "", 16, 0);
+  auto pr = parser.parse_string("-b --directory");
+  auto c = pr.situation.circumstance;
+  CLOG_CHECK(c.get("/flag/escape"), "circumstance", c.to_str());
+  CLOG_CHECK(c.get("/flag/directory"), "circumstance", c.to_str());
+  CLOG_CHECK(!c.get("/flag/all"), "circumstance", c.to_str());
+  pr = parser.parse_string("-B --color=color-when", c);
+  CLOG_CHECK(c.get("/flag/ignore-backups"), "circumstance", c.to_str());
+  CLOG_CHECK(c.get("/flag/color"), "circumstance", c.to_str());
+  CLOG_CHECK_EQ(*c.get<std::string>("/flag/color"), "color-when",
+                "circumstance", c.to_str());
+  CLOG_CHECK(c.get("/flag/escape"), "circumstance", c.to_str());
+}
+
+int main(int argc, char* argv[]) {
+  for (auto && n_t : tests) {
+    CLOG(INFO, "test", n_t.first, "...");
+    n_t.second->Run();
+    CLOG(INFO, "done", n_t.first);
+  }
+  return 0;
 }
