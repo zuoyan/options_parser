@@ -34,9 +34,26 @@ struct from_str_impl {
   }
 };
 
+template <class Tag>
+struct from_str_impl<bool, Tag> {
+  static Maybe<string> from_str(const string &s, bool *p) {
+    if (strcasecmp(s.c_str(), "true") == 0 || strcmp(s.c_str(), "1") == 0 ||
+        strcasecmp(s.c_str(), "t") == 0) {
+      *p = true;
+      return nothing;
+    }
+    if (strcasecmp(s.c_str(), "false") == 0 || strcmp(s.c_str(), "0") == 0 ||
+        strcasecmp(s.c_str(), "f") == 0) {
+      *p = false;
+      return nothing;
+    }
+    return "from_str<b>(\"" + s + "\") failed";
+  }
+};
+
 template <class T>
 Maybe<string> from_str(const string &s, T *p) {
-  static_assert(!std::is_same<T, string>::value, "not string ...");
+  static_assert(!std::is_same<T, string>::value, "should not a string ...");
   return from_str_impl<T>::from_str(s, p);
 }
 

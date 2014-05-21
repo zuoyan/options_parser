@@ -69,6 +69,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
 
   Value() {
     this->func_ = [](Situation s) -> std::pair<Either<T>, Situation> {
+      auto os = s;
       auto r = get_arg(s.args, s.position);
       s.position = r.end;
       s.args = s.args;
@@ -78,7 +79,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
       T val;
       auto ec = from_str(*r.value.get(), &val);
       if (ec) {
-        return std::make_pair(error_message(*ec.get()), s);
+        return std::make_pair(error_message(*ec.get()), os);
       }
       return std::make_pair(val, s);
     };
@@ -88,7 +89,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
   Value situation_check(const Check &func, const string &message =
                                                "situation_check failed") const {
     auto tf = this->func_;
-    return Value([ tf, func, message ](Situation s)
+    return Value([ tf, func, message ](const Situation &s)
                      -> std::pair<Either<T>, Situation> {
       if (func(s)) {
         return tf(s);
@@ -107,16 +108,14 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     });
   }
 
-  Value<Maybe<T>> optional() const {
+  Value<Maybe<T>> ignore_error() const {
     auto tf = this->func_;
     auto func = [tf](Situation s) {
       Either<Maybe<T>> v;
-      if (s.position.off > 0) {
-        auto v_s = tf(s);
+      auto v_s = tf(s);
+      if (!get_error(v_s.first)) {
+        v.value = v_s.first.value;
         s = v_s.second;
-        if (v_s.first.value) {
-          v.value = v_s.first.value;
-        }
       }
       if (!v.value) {
         v.value = Maybe<T>{};
@@ -124,6 +123,12 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
       return std::make_pair(v, s);
     };
     return func;
+  }
+
+  Value<Maybe<T>> optional() const {
+    return situation_check([](const Situation &s) {
+                             return s.position.off > 0;
+                           }).ignore_error();
   }
 
   Value<std::vector<T>> many(size_t min = 0, size_t max = -1) const {
@@ -150,6 +155,26 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
   }
 
   Value<std::vector<T>> times(size_t n) const { return many(n, n); }
+
+  template <class VS>
+  Value<VS> cons(const Value<VS> &rest) {
+    return this->bind([rest](const T &v) {
+      return rest.apply([v](VS vs) {
+        vs.insert(vs.begin(), v);
+        return vs;
+      });
+    });
+  }
+
+  template <class VS>
+  Value<VS> concat(const Value<VS>& tail) {
+    return this->bind([tail](T head) {
+      return tail.apply([head](VS vs) {
+        vs.insert(vs.begin(), head.begin(), head.end());
+        return vs;
+      });
+    });
+  }
 };
 
 template <class T = string>

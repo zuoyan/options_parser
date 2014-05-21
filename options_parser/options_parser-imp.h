@@ -89,6 +89,10 @@ OPTIONS_PARSER_IMP void Parser::set_epilog(const property<string> &epilog) {
   holder_->epilog = epilog;
 }
 
+OPTIONS_PARSER_IMP void Parser::set_help_level(int help_level) {
+  holder_->help_level = help_level;
+}
+
 OPTIONS_PARSER_IMP bool Parser::toggle() {
   holder_->active = !holder_->active;
   return holder_->active;

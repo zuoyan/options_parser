@@ -59,6 +59,8 @@ struct Parser {
   // epilog is print after options
   void set_epilog(const property<string> &epilog);
 
+  void set_help_level(int help_level);
+
   bool toggle();
   void disable();
   void enable();
@@ -114,7 +116,7 @@ struct Parser {
   }
 
   template <class CM = string, class CD = string>
-  std::shared_ptr<Option> add_help(const CM &m = "-h, --help",
+  std::shared_ptr<Option> add_help(const CM &m = "-h, --help[=level]",
                                    const CD &d = "show help message");
 
   template <class T, class CO, class CD>

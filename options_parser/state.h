@@ -65,11 +65,19 @@ struct state {
     auto lf = [ func, tf ](const S &s) -> std::pair<FR, S> {
       auto v_s = tf(s);
       auto e = get_error(v_s.first);
-      if (e) return std::make_pair(error_message(*e.get()), v_s.second);
+      if (e) {
+        return std::make_pair(error_message(*e.get()), s);
+      }
       auto fr = func(get_value(v_s.first));
       auto fe = get_error(fr);
-      if (fe) return std::make_pair(error_message(*fe.get()), v_s.second);
-      return get_value(fr)(v_s.second);
+      if (fe) {
+        return std::make_pair(error_message(*fe.get()), s);
+      }
+      auto b_s = get_value(fr)(v_s.second);
+      if (get_error(b_s.first)) {
+        return std::make_pair(b_s.first, s);
+      }
+      return b_s;
     };
     return lf;
   }
@@ -81,7 +89,11 @@ struct state {
     auto tf = func_;
     return [func, tf](const S &s) {
       auto v_s = tf(s);
-      return std::make_pair(options_parser::apply(func, v_s.first), v_s.second);
+      auto r = options_parser::apply(func, v_s.first);
+      if (get_error(r)) {
+        return std::make_pair(r, s);
+      }
+      return std::make_pair(r, v_s.second);
     };
   }
 

@@ -31,10 +31,11 @@ OPTIONS_PARSER_IMP Matcher::Matcher(const MatchFromDescription &mfd,
     MatchResult mr;
     mr.priority = 0;
     mr.start = s.position;
-    mr.situation = m_s.second;
+    mr.situation = s;
     if (get_error(m_s.first)) {
       return mr;
     }
+    mr.situation = m_s.second;
     auto arg = *m_s.first.value.get();
     string first_arg;
     {
@@ -59,7 +60,10 @@ OPTIONS_PARSER_IMP Matcher::Matcher(const MatchFromDescription &mfd,
         }
       }
     }
-    if (mfd.is_raw) return mr;
+    if (mfd.is_raw) {
+      mr.situation.position = s.position;
+      return mr;
+    }
     if (!arg_getter && arg.size() && !starts_with(first_arg, "--")) {
       for (const string &o : mfd.opts) {
         if (o.size() != 1) continue;
@@ -79,6 +83,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(const MatchFromDescription &mfd,
         return mr;
       }
     }
+    mr.situation.position = s.position;
     return mr;
   };
 }

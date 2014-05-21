@@ -61,13 +61,13 @@ ParseResult Parser::parse_lines(const GetLine &get_line,
 template <class CM, class CD>
 std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
   auto self = *this;
-  auto help_take = [self](const MatchResult &) {
+  auto help_take = value<int>().optional().apply([self](Maybe<int> l) {
+    int level = l ? *l.get() : 0;
     auto parser = self;
-    std::cout << parser.help_message(0, 78) << std::endl;
+    std::cout << parser.help_message(level, 78) << std::endl;
     exit(0);
-    TakeResult tr;
-    return tr;
-  };
+    return "help";
+  });
   return add_option(m, help_take, d);
 }
 

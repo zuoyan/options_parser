@@ -13,6 +13,10 @@ ENDIF()
 
 ADD_LIBRARY(options_parser SHARED options_parser/options_parser_lib.cc)
 
+ADD_EXECUTABLE(value_test value_test.cc)
+
+ADD_EXECUTABLE(matcher_test matcher_test.cc)
+
 ADD_EXECUTABLE(options_parser_test options_parser_test.cc lib_test.cc)
 TARGET_LINK_LIBRARIES(options_parser_test options_parser)
 
