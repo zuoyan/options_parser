@@ -68,7 +68,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
   Value &operator=(const Value &) = default;
 
   Value() {
-    this->func_ = [](Situation s)->std::pair<Either<T>, Situation> {
+    this->func_ = [](Situation s) -> std::pair<Either<T>, Situation> {
       auto r = get_arg(s.args, s.position);
       s.position = r.end;
       s.args = s.args;
@@ -85,11 +85,11 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
   }
 
   template <class Check>
-  Value situation_check(const Check &func,
-                        const string &message = "situation_check failed") const {
+  Value situation_check(const Check &func, const string &message =
+                                               "situation_check failed") const {
     auto tf = this->func_;
     return Value([ tf, func, message ](Situation s)
-                                          ->std::pair<Either<T>, Situation> {
+                     -> std::pair<Either<T>, Situation> {
       if (func(s)) {
         return tf(s);
       }
@@ -128,9 +128,8 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
 
   Value<std::vector<T>> many(size_t min = 0, size_t max = -1) const {
     auto tf = this->func_;
-    auto func = [ tf, min, max ](const Situation & s)
-                                    ->std::pair<Either<std::vector<T>>,
-                                                Situation> {
+    auto func = [ tf, min, max ](const Situation &s)
+        -> std::pair<Either<std::vector<T>>, Situation> {
       std::vector<T> vs;
       auto saved = s;
       auto ns = s;
@@ -153,7 +152,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
   Value<std::vector<T>> times(size_t n) const { return many(n, n); }
 };
 
-template <class T=string>
+template <class T = string>
 Value<T> value() {
   return Value<T>();
 }
@@ -189,9 +188,10 @@ struct value_gather_tuple_impl {
   template <class... States>
   static Value<typename value_gather_inner_value_type<States...>::type>
   value_gather_tuple(const std::tuple<States...> &states) {
-    auto func = [states](const Situation & s)
-        ->std::pair<Either<typename value_gather_inner_value_type<States...>::type>,
-                    Situation> {
+    auto func = [states](const Situation &s)
+        -> std::pair<
+              Either<typename value_gather_inner_value_type<States...>::type>,
+              Situation> {
       typename value_gather_inner_value_type<States...>::type value;
       value_gather_tuple_impl self;
       Maybe<string> error;

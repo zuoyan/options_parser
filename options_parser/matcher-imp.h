@@ -15,9 +15,8 @@ OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
   };
 }
 
-OPTIONS_PARSER_IMP Matcher::Matcher(
-    const MatchFromDescription &mfd,
-    Maybe<Value<string>> arg_getter) {
+OPTIONS_PARSER_IMP Matcher::Matcher(const MatchFromDescription &mfd,
+                                    Maybe<Value<string>> arg_getter) {
   match_ = [mfd, arg_getter](const Situation &s) {
     std::pair<Either<string>, Situation> m_s;
     if (arg_getter) {

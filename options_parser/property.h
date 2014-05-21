@@ -40,7 +40,7 @@ struct property {
 
   template <class U>
   property &operator=(const U &u) {
-    if ((intptr_t) & u != (intptr_t) this) {
+    if ((intptr_t)&u != (intptr_t) this) {
       this->~property();
       new (this) property(u);
     }

@@ -63,7 +63,7 @@ OPTIONS_PARSER_IMP PositionValue<string> get_match_arg(const Arguments &args,
 
 OPTIONS_PARSER_IMP Value<string> match_value(char prefix, bool strip) {
   auto func = [ prefix, strip ](Situation s)
-                                   ->std::pair<Either<string>, Situation> {
+      -> std::pair<Either<string>, Situation> {
     auto r = get_match_arg(s.args, s.position, prefix, strip);
     s.position = r.end;
     if (r.value) {

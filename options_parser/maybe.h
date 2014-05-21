@@ -61,8 +61,8 @@ struct VoidWrap {
   }
 
   template <class... Args>
-  typename result_type_impl<Args &&...>::type operator()(Args &&... args)
-      const {
+  typename result_type_impl<Args &&...>::type operator()(
+      Args &&... args) const {
     return call(std::forward<Args>(args)...);
   }
 };
@@ -127,7 +127,7 @@ struct Maybe {
 
   template <class U>
   Maybe &operator=(const U &v) {
-    if ((intptr_t) & v != (intptr_t) this) {
+    if ((intptr_t)&v != (intptr_t) this) {
       this->~Maybe();
       new (this) Maybe(v);
     }
@@ -191,16 +191,16 @@ struct Either {
       : value(v) {}
 
   template <class Func>
-  auto bind(Func &&func)
-      const -> Either<decltype(func(std::declval<Value>())), Other> {
+  auto bind(Func &&func) const
+      -> Either<decltype(func(std::declval<Value>())), Other> {
     if (other) return Error<Other>(*other.get());
     if (value) return func(*this->value.get());
     return Error<Other>();
   }
 
   template <class Func>
-  auto apply(Func &&func)
-      const -> Either<decltype(void_wrap(func)(std::declval<Value>())), Other> {
+  auto apply(Func &&func) const
+      -> Either<decltype(void_wrap(func)(std::declval<Value>())), Other> {
     if (other) return Error<Other>(*other.get());
     if (value) return void_wrap(func)(*this->value.get());
     return Error<Other>();

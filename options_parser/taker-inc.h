@@ -12,7 +12,7 @@ inline Maybe<string> Taker::to_error(const Maybe<T> &v) {
 
 template <class T>
 inline Maybe<string> Taker::to_error(const std::vector<T> &vs) {
-  for (const auto & v : vs) {
+  for (const auto &v : vs) {
     auto e = to_error(v);
     if (e) return e;
   }

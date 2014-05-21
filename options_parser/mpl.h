@@ -127,14 +127,14 @@ struct function_traits<R (*)(Args...)> : function_traits<R(Args...)> {};
 template <class C, class R, class... Args>
 struct function_traits<R (C::*)(Args...)> : function_traits<R(C *, Args...)> {
   typedef C class_type;
-  static constexpr int nary = sizeof...(Args) + 1;
+  static constexpr int nary = sizeof...(Args)+1;
 };
 
 template <class C, class R, class... Args>
-struct function_traits<R (C::*)(Args...) const> : function_traits<
-                                                      R(C *, Args...)> {
+struct function_traits<R (C::*)(Args...) const>
+    : function_traits<R(C *, Args...)> {
   typedef C class_type;
-  static constexpr int nary = sizeof...(Args) + 1;
+  static constexpr int nary = sizeof...(Args)+1;
 };
 
 }  // namespace mpl

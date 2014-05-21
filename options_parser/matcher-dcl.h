@@ -156,9 +156,10 @@ struct Matcher {
     match_ = func;
   }
 
-  template <class F, decltype(*(int *)0 = get_value(std::declval<F>()(
-                                  std::declval<Situation>()).first),
-                              0) = 0>
+  template <class F,
+            decltype(*(int *)0 = get_value(
+                         std::declval<F>()(std::declval<Situation>()).first),
+                     0) = 0>
   Matcher(const F &func) {
     match_ = [func](const Situation &s) {
       auto v_s = func(s);

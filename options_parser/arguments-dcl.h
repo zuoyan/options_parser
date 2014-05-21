@@ -75,10 +75,9 @@ struct VectorStringArguments {
 };
 
 struct FunctionArguments {
-  FunctionArguments(std::function<int()> argc,
-                    std::function<int(int, int)> char_at,
-                    std::function<string(int)> arg_at =
-                        std::function<string(int)>{});
+  FunctionArguments(
+      std::function<int()> argc, std::function<int(int, int)> char_at,
+      std::function<string(int)> arg_at = std::function<string(int)>{});
 
   std::function<int()> argc;
   std::function<int(int, int)> char_at_;

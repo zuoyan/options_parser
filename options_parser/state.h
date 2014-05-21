@@ -59,10 +59,10 @@ struct state {
 
   template <class F, class FR = decltype(get_value(options_parser::apply(
                          std::declval<F>(), get_value(std::declval<V>())))(
-                         std::declval<S>()).first)>
+                                             std::declval<S>()).first)>
   typename Rebind::template rebind<FR, S>::type bind(const F &func) const {
     auto tf = func_;
-    auto lf = [ func, tf ](const S & s)->std::pair<FR, S> {
+    auto lf = [ func, tf ](const S &s) -> std::pair<FR, S> {
       auto v_s = tf(s);
       auto e = get_error(v_s.first);
       if (e) return std::make_pair(error_message(*e.get()), v_s.second);
@@ -88,16 +88,15 @@ struct state {
   template <class F, class = typename std::enable_if<
                          mpl::is_callable<F, V>::value>::type>
   typename Rebind::template rebind<Maybe<V>, S>::type check(const F &func) {
-    return apply([func](const V & v)
-                     ->Maybe<V> { return func(v) ? v : nothing; });
+    return apply([func](const V &v)
+                     -> Maybe<V> { return func(v) ? v : nothing; });
   }
 
   template <class F, class = typename std::enable_if<
                          !mpl::is_callable<F, V>::value>::type>
-  typename Rebind::template rebind<V, S>::type check(const F &func,
-                                                     const string &message =
-                                                         "check failed") {
-    return apply([ func, message ](const V & v) -> V {
+  typename Rebind::template rebind<V, S>::type check(
+      const F &func, const string &message = "check failed") {
+    return apply([func, message](const V &v) -> V {
       auto e = get_error(v);
       if (e) {
         return v;
