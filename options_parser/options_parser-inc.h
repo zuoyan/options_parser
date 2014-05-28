@@ -60,14 +60,31 @@ ParseResult Parser::parse_lines(const GetLine &get_line,
 
 template <class CM, class CD>
 std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
-  auto self = *this;
-  auto help_take = value<int>().optional().apply([self](Maybe<int> l) {
-    int level = l ? *l.get() : 0;
-    auto parser = self;
-    std::cout << parser.help_message(level, 78) << std::endl;
+  auto help_take = [](const MatchResult &mr) {
+    TakeResult tr;
+    auto v_s = value<int>().optional()(mr.situation);
+    tr.error = get_error(v_s.first);
+    if (tr.error) {
+      std::cerr << "error from help: " << *tr.error.get() << "..." << std::endl;
+      exit(1);
+      return tr;
+    }
+    tr.situation = v_s.second;
+    tr.error = "help";
+    auto self = tr.situation.circumstance.get<Parser>();
+    if (!self) {
+      std::cerr << "fix me: parser not find in circumstance ..." << std::endl;
+      exit(1);
+      return tr;
+    }
+    int level = 0;
+    if (get_value(v_s.first)) {
+      level = *get_value(v_s.first).get();
+    }
+    std::cout << self->help_message(level, 78) << std::endl;
     exit(0);
-    return "help";
-  });
+    return tr;
+  };
   return add_option(m, help_take, d);
 }
 

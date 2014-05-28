@@ -1,10 +1,13 @@
 #ifndef FILE_A1F24FBA_5A7E_4271_B00E_8450C8459AF6_H
 #define FILE_A1F24FBA_5A7E_4271_B00E_8450C8459AF6_H
 #include "clog/pp.hpp"
+#include <iostream>
+#include <sstream>
 #include <map>
-#include <string>
 #include <memory>
+#include <string>
 #include <stdexcept>
+#include <vector>
 
 namespace test {
 
@@ -171,24 +174,97 @@ struct test_register {
 
 }  // namespace test
 
-#ifndef NO_TEST_MAIN
+#ifndef TEST_NO_MAIN
+
+#include <regex>
 
 int main(int argc, char* argv[]) {
-  int num_fail = 0, num_succ = 0;
+  std::vector<std::regex> select_tests;
+  std::vector<std::regex> ignore_tests;
+  bool list_tests = false;
+
+#ifdef FILE_02522C8F_5040_40F1_ACBE_AEFC05B4514B_H
+  options_parser::Parser app("run/list tests\n", "\n");
+  app.add_parser(options_parser::parser());
+  app.add_help();
+  app.add_option("--test <name/pattern>",
+                 [&](std::string n) {
+                   select_tests.emplace_back(n, std::regex_constants::icase);
+                 },
+                 "select test, the pattern is supported by std::regex and "
+                 "case insensitive");
+  app.add_option("--Test <name/pattern>",
+                 [&](std::string n) { select_tests.emplace_back(n); },
+                 "select test, the pattern is supported by std::regex, and "
+                 "case sensitive");
+  app.add_option("--ignore-test <name/pattern>",
+                 [&](std::string n) {
+                   ignore_tests.emplace_back(n, std::regex_constants::icase);
+                 },
+                 "ignore test, the pattern is supported by std::regex and "
+                 "case insensitive");
+  app.add_option("--Ignore-Test <name/pattern>",
+                 [&](std::string n) { ignore_tests.emplace_back(n); },
+                 "ignore test, the pattern is supported by std::regex, and "
+                 "case sensitive");
+  app.add_option("--list-tests", [&]() { list_tests = true; },
+                 "list all matched tests, instead of run them");
+  {
+    auto pr = app.parse(argc, argv);
+    pr.check_print();
+  }
+#endif
+
+  auto will_run_test = [&](std::string name) {
+    auto is_select = [&]() {
+      if (select_tests.size()) {
+        for (auto& r : select_tests) {
+          if (regex_search(name, r)) return true;
+        }
+        return false;
+      }
+      return true;
+    };
+    auto is_ignored = [&]() {
+      if (ignore_tests.size()) {
+        for (auto& r : ignore_tests) {
+          if (regex_search(name, r)) return true;
+        }
+      }
+      return false;
+    };
+    return is_select() && !is_ignored();
+  };
+
+  int num_fail = 0, num_succ = 0, num_ignore = 0;
   for (const auto& t : ::test::tests()) {
-    bool r = t->Run();
-    if (r) {
-      num_succ++;
+    if (!will_run_test(t->name_)) {
+      ++num_ignore;
+      continue;
+    }
+    if (list_tests) {
+      std::cout << t->name_ << std::endl;
     } else {
-      num_fail++;
+      bool r = t->Run();
+      if (r) {
+        num_succ++;
+      } else {
+        num_fail++;
+      }
     }
   }
-  if (num_fail) {
-    std::cerr << "Test succ " << num_succ << "/ " << ::test::Test::color_red()
-              << "fail " << num_fail << ::test::Test::color_reset()
-              << std::endl;
-  } else {
-    std::cerr << "Test succ " << num_succ << "/ fail " << num_fail << std::endl;
+  if (!list_tests) {
+    if (num_fail) {
+      std::cerr << "Test succ " << num_succ << "/ " << ::test::Test::color_red()
+                << "fail " << num_fail << ::test::Test::color_reset()
+                << std::endl;
+    } else {
+      std::cerr << "Test succ " << num_succ << "/ fail " << num_fail
+                << std::endl;
+    }
+    if (num_ignore) {
+      std::cerr << "*Note*\t" << num_ignore << " test(s) ignored";
+    }
   }
   if (num_fail <= 64) return num_fail;
   return 64;
