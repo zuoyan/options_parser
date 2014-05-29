@@ -57,22 +57,18 @@ ParseResult Parser::parse_lines(const GetLine &get_line, Situation s) {
 
 template <class CM, class CD>
 std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
-  auto help_take = [](const MatchResult &mr) {
-    TakeResult tr;
-    auto v_s = value<int>().optional()(mr.situation);
-    tr.error = get_error(v_s.first);
-    if (tr.error) {
-      std::cerr << "error from help: " << *tr.error.get() << "..." << std::endl;
+  auto help_take = [](const Situation &s) {
+    auto v_s = value<int>().optional()(s);
+    if (get_error(v_s.first)) {
+      std::cerr << "error from help: " << *get_error(v_s.first).get() << "..."
+                << std::endl;
       exit(1);
-      return tr;
+      return v_s;
     }
-    tr.situation = v_s.second;
-    tr.error = "help";
-    auto self = tr.situation.circumstance.get<Parser>();
+    auto self = s.parser;
     if (!self) {
-      std::cerr << "fix me: parser not find in circumstance ..." << std::endl;
+      std::cerr << "fix me: parser not find in situation ..." << std::endl;
       exit(1);
-      return tr;
     }
     int level = 0;
     if (get_value(v_s.first)) {
@@ -80,7 +76,7 @@ std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
     }
     std::cout << self->help_message(level, 78) << std::endl;
     exit(0);
-    return tr;
+    return v_s;
   };
   return add_option(m, help_take, d);
 }

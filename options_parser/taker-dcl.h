@@ -14,6 +14,7 @@ struct Taker {
 
   Taker(const Taker &) = default;
 
+  // A function from MatchResult to TakeResult.
   template <class F, typename std::enable_if<
                          std::is_same<typename mpl::is_callable<
                                           F, const MatchResult &>::result_type,
@@ -23,6 +24,7 @@ struct Taker {
     take_ = func;
   }
 
+  // A function from MatchResult to Situation.
   template <class F,
             typename std::enable_if<
                 mpl::is_callable<F, const MatchResult &>::value &&
@@ -38,6 +40,7 @@ struct Taker {
     };
   }
 
+  // Assign values to destination ptr.
   template <class T,
             typename std::enable_if<!std::is_function<T>::value, int>::type = 0>
   Taker(T *ptr) {
@@ -53,6 +56,8 @@ struct Taker {
     };
   }
 
+  // A function from Situation to Pair<Value, Situation>, where Value is
+  // error_str/error_code/void.
   template <class F,
             typename std::enable_if<
                 mpl::is_callable<F, const Situation &>::value, int>::type = 0>
@@ -66,6 +71,9 @@ struct Taker {
     };
   }
 
+  // A function(not from Situation/MatchResult) returns
+  // error_str/error_code/void. The parameters are consumed from arguments and
+  // converted to the correct types.
   template <class F, typename std::enable_if<
                          !mpl::is_callable<F, const MatchResult &>::value &&
                              !mpl::is_callable<F, const Situation &>::value,

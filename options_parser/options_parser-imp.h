@@ -9,7 +9,7 @@
 
 namespace options_parser {
 
-bool ParseResult::check_print(bool all, int code) const {
+OPTIONS_PARSER_IMP bool ParseResult::check_print(bool all, int code) const {
   if (error) {
     string es = *error.get();
     if (es != "match-none" || all) {
