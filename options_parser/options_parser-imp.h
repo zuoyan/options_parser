@@ -85,12 +85,22 @@ OPTIONS_PARSER_IMP void Parser::set_description(
   holder_->description = description;
 }
 
+OPTIONS_PARSER_IMP Document Parser::description() const {
+  return holder_->description;
+}
+
 OPTIONS_PARSER_IMP void Parser::set_epilog(const property<string> &epilog) {
   holder_->epilog = epilog;
 }
 
+OPTIONS_PARSER_IMP Document Parser::epilog() const { return holder_->epilog; }
+
 OPTIONS_PARSER_IMP void Parser::set_help_level(int help_level) {
   holder_->help_level = help_level;
+}
+
+OPTIONS_PARSER_IMP int Parser::help_level() const {
+  return holder_->help_level;
 }
 
 OPTIONS_PARSER_IMP bool Parser::toggle() {
@@ -102,33 +112,38 @@ OPTIONS_PARSER_IMP void Parser::disable() { holder_->active = false; }
 
 OPTIONS_PARSER_IMP void Parser::enable() { holder_->active = true; }
 
+OPTIONS_PARSER_IMP std::string show_position(const Situation &s,
+                                             size_t limit = 80) {
+  string ret = "index=" + to_str(s.position.index);
+  if (s.position.off) {
+    ret += " off=" + to_str(s.position.off) + ", ";
+  }
+  auto p = s.position;
+  p.off = 0;
+  if (p.index < s.args.argc()) {
+    ret += " argv='" + *get_arg(s.args, p).value.get() + "'";
+  } else {
+    if (p.index == s.args.argc()) {
+      ret += " (end of argv)";
+    } else {
+      ret += " argv-size=" + to_str(s.args.argc());
+    }
+  }
+  while (ret.size() + 6 < limit && ++p.index < s.args.argc()) {
+    auto a = *get_arg(s.args, p).value.get();
+    if (ret.size() + a.size() + 2 >= limit) {
+      a.resize(limit - 5 - ret.size());
+      a += " ...";
+    }
+    ret += " '" + a + "'";
+  }
+  return ret;
+}
+
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   Situation c = s;
   if (!c.parser) c.parser = this;
   ParseResult pr;
-
-  auto show_position = [](const Situation &s, size_t limit = 80) {
-    string ret = to_str(s.position.index);
-    if (s.position.off) {
-      ret += " off=" + to_str(s.position.off) + ", ";
-    }
-    auto p = s.position;
-    p.off = 0;
-    if (p.index < s.args.argc()) {
-      ret += " '" + *get_arg(s.args, p).value.get() + "'";
-    } else {
-      ret += " over size=" + to_str(s.args.argc());
-    }
-    while (ret.size() + 6 < limit && ++p.index < s.args.argc()) {
-      auto a = *get_arg(s.args, p).value.get();
-      if (ret.size() + a.size() + 2 >= limit) {
-        a.resize(limit - 5 - ret.size());
-        a += " ...";
-      }
-      ret += " '" + a + "'";
-    }
-    return ret;
-  };
 
   while (c.position.index < c.args.argc()) {
     auto mr_opts = match_results(c);
@@ -296,7 +311,7 @@ OPTIONS_PARSER_IMP std::vector<std::shared_ptr<Option>> Parser::add_flags_lines(
   return add_flags_lines(get_line, doc_indent);
 }
 
-OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {
+OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) const {
   auto docs = documents(level);
   std::vector<string> lines;
   for (const auto &doc : docs) {
@@ -306,7 +321,7 @@ OPTIONS_PARSER_IMP string Parser::help_message(int level, int width) {
   return join(lines, "\n");
 }
 
-OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) {
+OPTIONS_PARSER_IMP std::vector<Document> Parser::documents(int level) const {
   std::vector<Document> docs;
   if (!holder_) return docs;
   if (level < holder_->help_level) return docs;

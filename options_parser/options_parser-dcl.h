@@ -54,13 +54,14 @@ struct Parser {
 
   Parser(const Parser &) = default;
 
-  // description is print before options
   void set_description(const property<string> &description);
+  Document description() const;
 
-  // epilog is print after options
   void set_epilog(const property<string> &epilog);
+  Document epilog() const;
 
   void set_help_level(int help_level);
+  int help_level() const;
 
   bool toggle();
   void disable();
@@ -243,10 +244,10 @@ struct Parser {
   std::vector<std::shared_ptr<Option>> add_flags_file(const string &fn,
                                                       size_t doc_indent = 8);
 
-  string help_message(int level, int width);
+  string help_message(int level, int width) const;
+  std::vector<Document> documents(int level) const;
 
  private:
-  std::vector<Document> documents(int level);
   std::vector<std::pair<MatchResult, std::shared_ptr<Option>>> match_results(
       const Situation &s) const;
 
