@@ -104,7 +104,7 @@ OPTIONS_PARSER_IMP void Parser::enable() { holder_->active = true; }
 
 OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
   Situation c = s;
-  *c.circumstance.get_or_set<Parser>() = *this;
+  if (!c.parser) c.parser = this;
   ParseResult pr;
 
   auto show_position = [](const Situation &s, size_t limit = 80) {
@@ -177,31 +177,29 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
       return pr;
     }
     c = tr.situation;
+    c.option = nullptr;
   }
   pr.situation = c;
   return pr;
 }
 
 OPTIONS_PARSER_IMP ParseResult
-Parser::parse_string(const string &a, Circumstance circumstance) {
+Parser::parse_string(const string &a, Situation s) {
   VectorStringArguments args(expand(a));
-  Situation s;
   s.args = args;
   s.position.off = 0;
   s.position.index = 0;
-  s.circumstance = circumstance;
   return parse(s);
 }
 
 OPTIONS_PARSER_IMP ParseResult
-Parser::parse_lines(const std::vector<string> &lines,
-                    Circumstance circumstance) {
+Parser::parse_lines(const std::vector<string> &lines, Situation s) {
   size_t off = 0;
   return parse_lines([&]() -> Maybe<string> {
                        if (off < lines.size()) return lines[off++];
                        return nothing;
                      },
-                     circumstance);
+                     s);
 }
 
 OPTIONS_PARSER_IMP TakeResult take_config_file(const MatchResult &mr) {
@@ -214,19 +212,22 @@ OPTIONS_PARSER_IMP TakeResult take_config_file(const MatchResult &mr) {
   }
   auto cli = tr.situation.circumstance.get<Parser>();
   assert(cli);
-  auto pr = cli->parse_file(get_value(v_s.first), tr.situation.circumstance);
+  auto pr = cli->parse_file(get_value(v_s.first), tr.situation);
   if (pr.error) {
     tr.error = pr.error;
     if (pr.error_full) tr.error = pr.error_full;
   }
-  tr.situation.circumstance = pr.situation.circumstance;
+  tr.situation = pr.situation;
+  tr.situation.args = v_s.second.args;
+  tr.situation.position = v_s.second.position;
   return tr;
 }
 
 OPTIONS_PARSER_IMP ParseResult
-Parser::parse_file(const string &fn, Circumstance circumstance) {
+Parser::parse_file(const string &fn, Situation s) {
   std::ifstream ifs(fn);
   ParseResult pr;
+  pr.situation = s;
   if (!ifs.good()) {
     pr.error = "open-failed";
     pr.error_full = "open file '" + fn + "' to read failed";
@@ -238,7 +239,7 @@ Parser::parse_file(const string &fn, Circumstance circumstance) {
     std::getline(ifs, l);
     return l;
   };
-  pr = parse_lines(get_line, pr.situation.circumstance);
+  pr = parse_lines(get_line, pr.situation);
   if (pr.error) {
     auto p = "parse file '" + fn + "' failed at line " +
              to_str(pr.situation.position.index) + " field " +
@@ -348,7 +349,9 @@ Parser::match_results(const Situation &s) const {
   for (auto const &opt : holder_->options) {
     if (!opt->active) continue;
     if (opt->priority < cur_pri) continue;
-    auto mr = opt->match(s);
+    auto os = s;
+    os.option = opt.get();
+    auto mr = opt->match(os);
     if (!mr.priority) continue;
     if (opt->priority > cur_pri) {
       ret.clear();

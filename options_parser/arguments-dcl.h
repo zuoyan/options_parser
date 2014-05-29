@@ -22,6 +22,7 @@ struct Arguments {
       : inst_(std::make_shared<Holder<T>>(v)) {}
 
   struct Interface {
+    virtual ~Interface() {}
     virtual int argc() const = 0;
     virtual int char_at(int idx, int off) const = 0;
     virtual string arg_at(int idx) const = 0;

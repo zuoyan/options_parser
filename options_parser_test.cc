@@ -125,7 +125,7 @@ TEST(Flags) {
   CHECK(c.get("/flag/escape"), "circumstance", c.to_str());
   CHECK(c.get("/flag/directory"), "circumstance", c.to_str());
   CHECK(!c.get("/flag/all"), "circumstance", c.to_str());
-  pr = parser.parse_string("-B --color=color-when", c);
+  pr = parser.parse_string("-B --color=color-when", pr.situation);
   CHECK(c.get("/flag/ignore-backups"), "circumstance", c.to_str());
   CHECK(c.get("/flag/color"), "circumstance", c.to_str());
   CHECK_EQ(*c.get<std::string>("/flag/color"), "color-when", "circumstance",

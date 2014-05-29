@@ -26,6 +26,7 @@ struct Option {
   Taker take;
   Document document;
   int priority;
+  Circumstance circumstance;
 
   Option();
   Option(const Option &) = default;
@@ -67,36 +68,28 @@ struct Parser {
 
   ParseResult parse(const Situation &s);
 
-  inline ParseResult parse(int argc, char *argv[],
-                           Circumstance circumstance = Circumstance()) {
-    Situation s;
+  inline ParseResult parse(int argc, char *argv[], Situation s = Situation()) {
     s.args = ArgvArguments(argc, argv);
     s.position = Position(1, 0);
-    s.circumstance = circumstance;
     return parse(s);
   }
 
   inline ParseResult parse(const std::vector<string> &argv, size_t off = 1,
-                           Circumstance circumstance = Circumstance()) {
-    Situation s;
+                           Situation s = Situation()) {
     s.args = VectorStringArguments(argv);
     s.position = Position(off, 0);
-    s.circumstance = circumstance;
     return parse(s);
   }
 
-  ParseResult parse_string(const string &a,
-                           Circumstance circumstance = Circumstance());
+  ParseResult parse_string(const string &a, Situation s = Situation());
 
   template <class GetLine>
-  ParseResult parse_lines(const GetLine &get_line,
-                          Circumstance circumstance = Circumstance());
+  ParseResult parse_lines(const GetLine &get_line, Situation s = Situation());
 
   ParseResult parse_lines(const std::vector<string> &lines,
-                          Circumstance circumstance = Circumstance());
+                          Situation s = Situation());
 
-  ParseResult parse_file(const string &fn,
-                         Circumstance circumstance = Circumstance());
+  ParseResult parse_file(const string &fn, Situation s = Situation());
 
   void add_parser(const Parser &parser, int priority = 0);
 

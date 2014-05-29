@@ -41,11 +41,15 @@ inline PositionValue<string> get_arg(const Arguments &args,
 inline PositionValue<string> get_match_arg(const Arguments &args,
                                            const Position &pos,
                                            const char prefix, bool strip);
+class Option;
+class Parser;
 
 struct Situation {
   Position position;
   Arguments args;
   Circumstance circumstance;
+  Option *option = nullptr;
+  Parser *parser = nullptr;
 };
 
 template <class T>

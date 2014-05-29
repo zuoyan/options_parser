@@ -96,6 +96,19 @@ struct Circumstance {
     return "{" + join(vs, ", ") + "}";
   }
 
+  void erase(const string& name) {
+    if (holder_) {
+      holder_->key_values.erase(name);
+    }
+  }
+
+  template <class T>
+  void erase() {
+    if (holder_) {
+      holder_->type_values.erase(&typeid(T));
+    }
+  }
+
   // Another indirect layer makes Circumstance value semantic and any copy holds
   // the same deeper object.
   struct Holder {

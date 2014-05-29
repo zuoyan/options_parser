@@ -18,13 +18,10 @@ Parser::Parser(const Description &description, const Epilog &epilog) {
 }
 
 template <class GetLine>
-ParseResult Parser::parse_lines(const GetLine &get_line,
-                                Circumstance circumstance) {
+ParseResult Parser::parse_lines(const GetLine &get_line, Situation s) {
   size_t line_index = 0;
   ParseResult pr;
-  pr.situation.circumstance = circumstance;
-  pr.situation.position.index = 0;
-  pr.situation.position.off = 0;
+  pr.situation = s;
   while (true) {
     auto maybe_line = get_line();
     if (!maybe_line) break;
@@ -47,7 +44,7 @@ ParseResult Parser::parse_lines(const GetLine &get_line,
         l += n.substr(0, n.size() - 1);
       }
     }
-    pr = parse_string(l, pr.situation.circumstance);
+    pr = parse_string(l, pr.situation);
     if (pr.error) {
       break;
     }

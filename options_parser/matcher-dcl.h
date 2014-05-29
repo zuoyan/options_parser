@@ -19,6 +19,7 @@ struct MatchResult {
   Situation situation;
   Position start;
   Priority priority;
+  Circumstance circumstance;
 };
 
 struct MatchFromDescription {

@@ -48,6 +48,7 @@ struct Any {
   }
 
   struct Interface {
+    virtual ~Interface() {}
     virtual Interface* clone() const = 0;
     virtual const std::type_info& type() const = 0;
     virtual string to_str() const = 0;
