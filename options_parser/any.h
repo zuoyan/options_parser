@@ -2,6 +2,9 @@
 #define FILE_2D51037C_E4CE_417A_8210_6893881CF367_H
 #include <typeinfo>
 
+#include "options_parser/string.h"
+#include "options_parser/converter.h"
+
 namespace options_parser {
 
 struct Any {
@@ -83,6 +86,8 @@ struct Any {
 
   std::shared_ptr<Interface> inst_;
 };
+
+inline string to_str(const Any& a) { return a.to_str(); }
 
 }  // namespace options_parser
 #endif  // FILE_2D51037C_E4CE_417A_8210_6893881CF367_H

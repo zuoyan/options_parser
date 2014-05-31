@@ -112,6 +112,16 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     });
   }
 
+  Value is_option() const {
+    return situation_check([](Situation s) {
+      if (s.position.off > 0) return false;
+      auto v_s = Value<string>()(s);
+      if (get_error(v_s.first)) return false;
+      auto arg = get_value(v_s.first);
+      return arg.size() && arg[0] == '-';
+    });
+  }
+
   Value<Maybe<T>> ignore_error() const {
     auto tf = this->func_;
     auto func = [tf](Situation s) {

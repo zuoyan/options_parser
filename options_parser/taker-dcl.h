@@ -14,6 +14,8 @@ struct Taker {
 
   Taker(const Taker &) = default;
 
+  inline Taker(std::nullptr_t) {}
+
   // A function from MatchResult to TakeResult.
   template <class F, typename std::enable_if<
                          std::is_same<typename mpl::is_callable<
@@ -92,6 +94,7 @@ struct Taker {
   }
 
   TakeResult operator()(const MatchResult &mr) const;
+  explicit operator bool() const;
 
   static Maybe<string> to_error(Nothing);
 

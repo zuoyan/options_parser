@@ -1,5 +1,7 @@
 #ifndef FILE_7F2A4BB9_F63E_48A8_8477_01B2AED3C183_H
 #define FILE_7F2A4BB9_F63E_48A8_8477_01B2AED3C183_H
+#include <cstring>
+
 namespace options_parser {
 
 template <class T, class Tag>

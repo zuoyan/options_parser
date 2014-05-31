@@ -2,24 +2,29 @@
 #include <cassert>
 
 #include "options_parser/options_parser_lib.h"
+#include "unistd.h"
 
 #include "test.h"
+#include "test_lib.h"
 
-#define CHECK_PARSE_RESULT(PR, ERROR, INDEX, OFF, ...)               \
-  {                                                                  \
-    std::string error = ERROR;                                       \
-    if (error.size()) {                                              \
-      if (PR.error) {                                                \
-        std::string es = *PR.error.get();                            \
-        ASSERT_EQ(error, es, ##__VA_ARGS__);                         \
-      } else {                                                       \
-        ASSERT(false, "expect a error", error, ##__VA_ARGS__);       \
-      }                                                              \
-    } else {                                                         \
-      CHECK(!PR.error, "got error", *PR.error.get(), ##__VA_ARGS__); \
-    }                                                                \
-    CHECK_EQ(PR.situation.position.index, INDEX, ##__VA_ARGS__);     \
-    CHECK_EQ(PR.situation.position.off, OFF, ##__VA_ARGS__);         \
+#define CHECK_PARSE_RESULT(PR, ERROR, INDEX, OFF, ...)                      \
+  {                                                                         \
+    std::string error = ERROR;                                              \
+    if (error.size()) {                                                     \
+      if (PR.error) {                                                       \
+        std::string es = *PR.error.get();                                   \
+        ASSERT_EQ(error, es, ##__VA_ARGS__);                                \
+      } else {                                                              \
+        ASSERT(false, "expect a error", error, ##__VA_ARGS__);              \
+      }                                                                     \
+    } else {                                                                \
+      std::string error_full;                                               \
+      if (PR.error_full) error_full = *PR.error_full.get();                 \
+      CHECK(!PR.error, "got error", *PR.error.get(), "full=" << error_full, \
+            ##__VA_ARGS__);                                                 \
+    }                                                                       \
+    CHECK_EQ(PR.situation.position.index, INDEX, ##__VA_ARGS__);            \
+    CHECK_EQ(PR.situation.position.off, OFF, ##__VA_ARGS__);                \
   }
 
 #define CHECK_PARSE(PARSER, STR, ERROR, INDEX, OFF, ...)          \
@@ -93,6 +98,27 @@ TEST(SubParserPriority) {
   CHECK_EQ(sub_value, "");
 }
 
+TEST(HideFromHelp) {
+  options_parser::Parser parser;
+  parser.add_option(0, nullptr, "exist-in-help");
+  parser.add_option(0, nullptr, "not-shown")->hide_from_help();
+  std::string s = parser.help_message(10000, 80);
+  CHECK_NE(s.find("exist-in-help"), std::string::npos);
+  CHECK_EQ(s.find("not-shown"), std::string::npos);
+}
+
+TEST(HelpLevel) {
+  options_parser::Parser parser;
+  parser.add_option(0, nullptr, "a-help");
+  parser.add_option(0, nullptr, "b-help")->set_help_level(10);
+  std::string s = parser.help_message(9, 80);
+  CHECK_NE(s.find("a-help"), std::string::npos);
+  CHECK_EQ(s.find("b-help"), std::string::npos);
+  s = parser.help_message(10, 80);
+  CHECK_NE(s.find("a-help"), std::string::npos);
+  CHECK_NE(s.find("b-help"), std::string::npos);
+}
+
 TEST(Flags) {
   options_parser::Parser parser;
   std::string flags = R"FLAGS(
@@ -122,13 +148,132 @@ TEST(Flags) {
               "", 16, 0);
   auto pr = parser.parse_string("-b --directory");
   auto c = pr.situation.circumstance;
-  CHECK(c.get("/flag/escape"), "circumstance", c.to_str());
-  CHECK(c.get("/flag/directory"), "circumstance", c.to_str());
-  CHECK(!c.get("/flag/all"), "circumstance", c.to_str());
+  CHECK(c.flag<bool>("escape"), "circumstance", c.to_str());
+  CHECK(c.flag<bool>("directory"), "circumstance", c.to_str());
+  CHECK(!c.flag<bool>("all"), "circumstance", c.to_str());
   pr = parser.parse_string("-B --color=color-when", pr.situation);
-  CHECK(c.get("/flag/ignore-backups"), "circumstance", c.to_str());
-  CHECK(c.get("/flag/color"), "circumstance", c.to_str());
-  CHECK_EQ(*c.get<std::string>("/flag/color"), "color-when", "circumstance",
+  CHECK(c.flag<bool>("ignore-backups"), "circumstance", c.to_str());
+  CHECK(c.flag("color"), "circumstance", c.to_str());
+  CHECK_EQ(*c.flag("color"), "color-when", "circumstance",
            c.to_str());
-  CHECK(c.get("/flag/escape"), "circumstance", c.to_str());
+  CHECK(c.flag<bool>("escape"), "circumstance", c.to_str());
+}
+
+TEST(MultiMany) {
+  options_parser::Parser parser;
+  parser.add_option("--func <int>... <str>... -SEP <str>...",
+                    value_gather(options_parser::value<int>().many(1),
+                                 options_parser::value().not_option().many(1),
+                                 options_parser::value(),
+                                 options_parser::value().not_option().many(1))
+                        .apply(options_parser::check_invoke([&](
+                            std::vector<int> vi, std::vector<std::string> vsa,
+                            std::string sep, std::vector<std::string> vsb) {
+                          CHECK_EQ(test::to_container(vi),
+                                   test::Container<int>({1, 3, 5, 7, 9}));
+                          CHECK_EQ(test::to_container(vsa),
+                                   test::Container<std::string>({
+                                       "11a", "12b", "13c"}));
+                          CHECK_EQ(sep, "-12");
+                          CHECK_EQ(
+                              test::to_container(vsb),
+                              test::Container<std::string>({"more", "vs"}));
+                        })),
+                    "complicate function");
+  std::string last;
+  parser.add_option("--last", &last, "check last");
+  CHECK_PARSE(parser,
+              "--func 1 3 5 7 9 11a 12b 13c -12 more vs --last last-value", "",
+              14, 0);
+  CHECK_EQ(last, "last-value");
+}
+
+template <class Func>
+struct AutoRunner {
+  bool active;
+  Func func;
+  AutoRunner() { active = false; }
+
+  template <class FF>
+  AutoRunner(FF&& func)
+      : func(std::forward<FF>(func)) {
+    active = true;
+  }
+
+  AutoRunner(const AutoRunner&) = delete;
+  AutoRunner(AutoRunner&) = delete;
+  AutoRunner& operator=(const AutoRunner&) = delete;
+  AutoRunner& operator=(AutoRunner&&) = delete;
+
+  AutoRunner(AutoRunner&& r) : active(r.active), func(std::move(r.func)) {
+    r.active = false;
+  }
+
+  ~AutoRunner() {
+    if (active) {
+      func();
+    }
+  }
+};
+
+struct AddAutoRunner {
+  template <class Func>
+  AutoRunner<typename std::remove_const<
+      typename std::remove_reference<Func>::type>::type>
+  operator+(Func&& func) {
+    return AutoRunner<typename std::remove_const<
+        typename std::remove_reference<Func>::type>::type>{
+        std::forward<Func>(func)};
+  }
+};
+
+#define DEFER DEFER_(__COUNTER__)
+#define DEFER_(COUNTER) auto PP_CAT(auto_runner_, COUNTER) = AddAutoRunner{} + [&]()
+
+TEST(ConfigFile) {
+  options_parser::Parser app;
+  app.add_option("--conf-file <config file>",
+                 &options_parser::take_config_file,
+                 "conf from file");
+  std::string va, vb;
+  app.add_option("--func A B", [&](std::string a, std::string b) {
+                                 if (a != b) {
+                                   return "should equal";
+                                 }
+                                 va = a;
+                                 vb = b;
+                                 return "";
+                               },
+                 "func-doc");
+  int vi = 13;
+  app.add_option("--vi INT", [&](int i) {
+                               if (i % 100 != 13) {
+                                 return "bad value";
+                               }
+                               vi = i;
+                               return "";
+                             },
+                 "vi-doc");
+  char tmp[] = "options_parser_test.XXXXXX.conf";
+  int fd = mkstemps(tmp, 5);
+  CHECK_GE(fd, 0, "mkstemps failed:", strerror(errno));
+  DEFER {
+    unlink(tmp);
+    close(fd);
+    fd = -1;
+  };
+  CHECK_GE(fd, 0, "fix defer first ...");
+  std::string content =
+      "--vi 1013 --func str-file-a str-file-a\n"
+      "--func str-file \\\n"
+      " str-file\n"
+      "# ignored line\n"
+      "--vi 1113";
+  CHECK_EQ(write(fd, content.data(), content.size()),
+           static_cast<ssize_t>(content.size()));
+  CHECK_PARSE(app, "--vi 113 --func str str --conf-file " + std::string(tmp),
+              "", 7, 0);
+  CHECK_EQ(vi, 1113);
+  CHECK_EQ(va, vb);
+  CHECK_EQ(va, "str-file");
 }

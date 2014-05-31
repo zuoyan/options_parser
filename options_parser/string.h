@@ -25,15 +25,6 @@ inline std::vector<string> split(const string &s, const string &sep,
   return fields;
 }
 
-inline string join(const std::vector<string> &vs, const string &sep) {
-  string ret;
-  for (size_t i = 0; i < vs.size(); ++i) {
-    if (i > 0) ret += sep;
-    ret += vs[i];
-  }
-  return ret;
-}
-
 inline std::vector<string> split_one_line(const string &s, size_t width,
                                           size_t indent = 0) {
   assert(s.find('\n') >= s.size());

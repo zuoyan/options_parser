@@ -1,13 +1,52 @@
 #ifndef FILE_BE44E7FB_480D_4869_A5D8_0EA9C352CB97_H
 #define FILE_BE44E7FB_480D_4869_A5D8_0EA9C352CB97_H
+#include <limits>
+
 #include "options_parser/config.h"
 #include "options_parser/arguments-imp.h"
 #include "options_parser/document-imp.h"
 #include "options_parser/converter-imp.h"
 #include "options_parser/matcher-imp.h"
 #include "options_parser/position-imp.h"
+#include "options_parser/join.h"
 
 namespace options_parser {
+
+OPTIONS_PARSER_IMP Option *Option::take_at_start() {
+  auto t = take;
+  take = [t](MatchResult mr) {
+    mr.situation.position = mr.start;
+    return t(mr);
+  };
+  return this;
+}
+
+OPTIONS_PARSER_IMP Option *Option::hide_from_help() {
+  help_level = std::numeric_limits<int>::max();
+  return this;
+}
+
+OPTIONS_PARSER_IMP Option *Option::set_help_level(int level) {
+  help_level = level;
+  return this;
+}
+
+OPTIONS_PARSER_IMP Option *Option::disable() {
+  active = false;
+  return this;
+}
+
+OPTIONS_PARSER_IMP Option *Option::set_priority(int p) {
+  priority = p;
+  return this;
+}
+
+OPTIONS_PARSER_IMP Option::Option(Matcher m, Taker t, Document d)
+    : match(m), take(t), document(d) {
+  if (take) {
+    active = false;
+  }
+}
 
 OPTIONS_PARSER_IMP bool ParseResult::check_print(bool all, int code) const {
   if (error) {
@@ -22,60 +61,6 @@ OPTIONS_PARSER_IMP bool ParseResult::check_print(bool all, int code) const {
     return false;
   }
   return true;
-}
-
-OPTIONS_PARSER_IMP Option::Option() {
-  active = true;
-  help_level = 0;
-  priority = 0;
-}
-
-OPTIONS_PARSER_IMP Option::Option(Matcher m, Taker t, Document d)
-    : match(m), take(t), document(d) {
-  active = true;
-  help_level = 0;
-  priority = 0;
-}
-
-OPTIONS_PARSER_IMP Taker taker_restart_match(Taker t) {
-  return [t](MatchResult mr) {
-    mr.situation.position = mr.start;
-    return t(mr);
-  };
-}
-
-OPTIONS_PARSER_IMP Taker bundle(const std::vector<Option> &options) {
-  return [options](const MatchResult &mr) {
-    TakeResult tr;
-    Situation s = mr.situation;
-    s.position = mr.start;
-    std::vector<std::pair<size_t, MatchResult>> mrs;
-    for (size_t i = 0; i < options.size(); ++i) {
-      auto &opt = options[i];
-      auto cmr = opt.match(s);
-      if (cmr.priority) {
-        mrs.push_back(std::make_pair(i, cmr));
-      }
-    }
-    Priority pri = std::numeric_limits<Priority>::min();
-    for (const auto &x_mr : mrs) {
-      if (pri < x_mr.second.priority) pri = x_mr.second.priority;
-    }
-    auto last = std::remove_if(mrs.begin(), mrs.end(),
-                               [&](const std::pair<size_t, MatchResult> &x_mr) {
-      return x_mr.second.priority != pri;
-    });
-    if (last == mrs.begin()) {
-      tr.error = "match none in sub options";
-      return tr;
-    }
-    if (last - mrs.begin() > 1) {
-      tr.error = "confused to choose from sub options";
-      return tr;
-    }
-    auto &opt = options[mrs.front().first];
-    return opt.take(mrs.front().second);
-  };
 }
 
 OPTIONS_PARSER_IMP Parser::Parser() { holder_ = std::make_shared<Holder>(); }
@@ -101,6 +86,10 @@ OPTIONS_PARSER_IMP void Parser::set_help_level(int help_level) {
 
 OPTIONS_PARSER_IMP int Parser::help_level() const {
   return holder_->help_level;
+}
+
+OPTIONS_PARSER_IMP void Parser::hide_from_help() {
+  holder_->help_level = std::numeric_limits<int>::max();
 }
 
 OPTIONS_PARSER_IMP bool Parser::toggle() {
@@ -193,6 +182,7 @@ OPTIONS_PARSER_IMP ParseResult Parser::parse(const Situation &s) {
     }
     c = tr.situation;
     c.option = nullptr;
+    c.circumstance = c.circumstance.parent();
   }
   pr.situation = c;
   return pr;
@@ -225,7 +215,7 @@ OPTIONS_PARSER_IMP TakeResult take_config_file(const MatchResult &mr) {
     tr.error = get_error(v_s.first);
     return tr;
   }
-  auto cli = tr.situation.circumstance.get<Parser>();
+  auto cli = tr.situation.parser;
   assert(cli);
   auto pr = cli->parse_file(get_value(v_s.first), tr.situation);
   if (pr.error) {
@@ -245,7 +235,7 @@ Parser::parse_file(const string &fn, Situation s) {
   pr.situation = s;
   if (!ifs.good()) {
     pr.error = "open-failed";
-    pr.error_full = "open file '" + fn + "' to read failed";
+    pr.error_full = "open file '" + fn + "' to read failed: " + strerror(errno);
     return pr;
   }
   auto get_line = [&]() -> Maybe<string> {
@@ -366,6 +356,7 @@ Parser::match_results(const Situation &s) const {
     if (opt->priority < cur_pri) continue;
     auto os = s;
     os.option = opt.get();
+    os.circumstance = os.circumstance.new_child();
     auto mr = opt->match(os);
     if (!mr.priority) continue;
     if (opt->priority > cur_pri) {

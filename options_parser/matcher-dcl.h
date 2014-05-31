@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "options_parser/maybe.h"
+#include "options_parser/join.h"
 #include "options_parser/arguments-dcl.h"
 #include "options_parser/position-dcl.h"
 
@@ -19,7 +20,6 @@ struct MatchResult {
   Situation situation;
   Position start;
   Priority priority;
-  Circumstance circumstance;
 };
 
 struct MatchFromDescription {
@@ -40,11 +40,8 @@ struct MatchFromDescription {
     }
     opts = split(doc, "|");
     if (opts.size()) name = opts.back();
-    doc.clear();
-    for (auto o : opts) {
-      if (doc.size()) doc += ", ";
-      doc += (o.size() == 1 ? "-" : "--") + o;
-    }
+    doc = join(opts, ", ",
+               [](string o) { return (o.size() == 1 ? "-" : "--") + o; });
   }
 
   MatchFromDescription(const string &d) : doc(d) {

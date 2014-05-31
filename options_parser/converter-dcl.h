@@ -97,5 +97,34 @@ struct has_to_str {
 static_assert(has_to_str<int>::value, "...");
 static_assert(!has_to_str<has_to_str<int>>::value, "...");
 
+struct to_str_functor {
+  template <class T>
+  string operator()(const T& v) {
+    return to_str(v);
+  }
+};
+
+template <class First, class Second>
+struct pair_to_str_functor {
+  pair_to_str_functor(const string &sep, First first, Second second)
+      : sep_(sep), first_(first), second_(second) {}
+
+  template <class T>
+  string operator()(const T& v) {
+    return first_(v.first) + sep_ + second_(v.second);
+  }
+
+  string sep_;
+  First first_;
+  Second second_;
+};
+
+template <class First = to_str_functor, class Second = to_str_functor>
+pair_to_str_functor<First, Second> pair_to_str(const string &sep,
+                                               First first = First(),
+                                               Second second = Second()) {
+  return pair_to_str_functor<First, Second>{sep, first, second};
+}
+
 }  // namespace options_parser
 #endif  // FILE_75F4A863_93A7_4BAE_A77E_5C14D933BBCA_H

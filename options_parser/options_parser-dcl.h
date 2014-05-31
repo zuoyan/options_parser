@@ -20,23 +20,25 @@
 namespace options_parser {
 
 struct Option {
-  bool active;
-  int help_level;
   Matcher match;
   Taker take;
   Document document;
-  int priority;
   Circumstance circumstance;
+  bool active = true;
+  int help_level = 0;
+  int priority = 0;
 
-  Option();
+  Option() = default;
   Option(const Option &) = default;
 
   Option(Matcher m, Taker t, Document d);
+
+  Option *take_at_start();
+  Option *hide_from_help();
+  Option *set_help_level(int help_level);
+  Option *disable();
+  Option *set_priority(int priority);
 };
-
-Taker taker_restart_match(Taker t);
-
-Taker bundle(const std::vector<Option> &options);
 
 struct ParseResult {
   Situation situation;
@@ -62,6 +64,7 @@ struct Parser {
 
   void set_help_level(int help_level);
   int help_level() const;
+  void hide_from_help();
 
   bool toggle();
   void disable();
@@ -127,7 +130,7 @@ struct Parser {
         if (mfd.is_arg_optional) {
           auto v_s = value<T>().optional()(mr.situation);
           tr.situation = v_s.second;
-          T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
+          T *ptr = tr.situation.circumstance.flag<T>(mfd.name, default_value);
           if (get_value(v_s.first)) {
             *ptr = get_value(get_value(v_s.first));
           } else {
@@ -138,15 +141,15 @@ struct Parser {
           tr.situation = v_s.second;
           tr.error = get_error(v_s.first);
           if (!tr.error) {
-            T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
-            *ptr = get_value(v_s.first);
+            tr.situation.circumstance.flag_set(
+                mfd.name, get_value(v_s.first));
           }
         }
       }
       if (mfd.num_args == 0) {
         tr.situation = mr.situation;
-        T *ptr = tr.situation.circumstance.flag<T>(mfd.name);
-        *ptr = default_value;
+        tr.situation.circumstance.flag_set(mfd.name,
+                                           default_value);
       }
       return tr;
     };

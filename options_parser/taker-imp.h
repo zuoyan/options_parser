@@ -10,6 +10,8 @@ OPTIONS_PARSER_IMP TakeResult Taker::operator()(const MatchResult &mr) const {
   return take_(mr);
 }
 
+OPTIONS_PARSER_IMP Taker::operator bool() const { return bool(take_); }
+
 OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(Nothing) { return nothing; }
 
 OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(void_) { return nothing; }
