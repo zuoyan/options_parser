@@ -165,7 +165,7 @@ struct Matcher {
       mr.start = s.position;
       mr.situation = v_s.second;
       mr.priority = 0;
-      if (!get_error(v_s.first)) {
+      if (!is_error(v_s.first)) {
         mr.priority = get_value(v_s.first);
       }
       return mr;
@@ -182,7 +182,7 @@ struct Matcher {
       mr.start = s.position;
       mr.situation = a_s.second;
       mr.priority = 0;
-      if (!get_error(a_s.first)) {
+      if (!is_error(a_s.first)) {
         string arg = get_value(a_s.first);
         mr.priority = func(arg);
       }

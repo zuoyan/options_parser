@@ -32,7 +32,7 @@ OPTIONS_PARSER_IMP Matcher::Matcher(const MatchFromDescription &mfd,
     mr.priority = 0;
     mr.start = s.position;
     mr.situation = s;
-    if (get_error(m_s.first)) {
+    if (is_error(m_s.first)) {
       return mr;
     }
     mr.situation = m_s.second;

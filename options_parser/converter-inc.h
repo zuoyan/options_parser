@@ -24,7 +24,7 @@ struct from_str_impl {
     if (!from_stream(is, p)) {
       return string("from_str<") + typeid(T).name() + ">(\"" + s + "\") failed";
     }
-    if (!is.eof()) {
+    if (is.peek() != EOF) {
       std::stringstream t;
       t << is.rdbuf();
       return string("from_str<") + typeid(T).name() + ">(\"" + s +

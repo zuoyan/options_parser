@@ -41,6 +41,15 @@ OPTIONS_PARSER_IMP Option *Option::set_priority(int p) {
   return this;
 }
 
+OPTIONS_PARSER_IMP Option *Option::append_document(Document doc) {
+  if (doc.format_) {
+    document.append_message(doc.format_);
+  } else {
+    document.append(doc.right_);
+  }
+  return this;
+}
+
 OPTIONS_PARSER_IMP Option::Option(Matcher m, Taker t, Document d)
     : match(m), take(t), document(d) {
   if (take) {
@@ -211,7 +220,7 @@ OPTIONS_PARSER_IMP TakeResult take_config_file(const MatchResult &mr) {
   auto v_s = value()(mr.situation);
   TakeResult tr;
   tr.situation = v_s.second;
-  if (get_error(v_s.first)) {
+  if (is_error(v_s.first)) {
     tr.error = get_error(v_s.first);
     return tr;
   }

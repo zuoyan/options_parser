@@ -10,6 +10,11 @@
 
 namespace options_parser {
 
+template <class T>
+Option *Option::append_value_document(T *ptr) {
+  return append_document([ptr]() { return "Value: " + to_str(*ptr); });
+}
+
 template <class Description, class Epilog>
 Parser::Parser(const Description &description, const Epilog &epilog) {
   holder_ = std::make_shared<Holder>();
@@ -59,8 +64,8 @@ template <class CM, class CD>
 std::shared_ptr<Option> Parser::add_help(const CM &m, const CD &d) {
   auto help_take = [](const Situation &s) {
     auto v_s = value<int>().optional()(s);
-    if (get_error(v_s.first)) {
-      std::cerr << "error from help: " << *get_error(v_s.first).get() << "..."
+    if (is_error(v_s.first)) {
+      std::cerr << "error from help: " << get_error(v_s.first) << "..."
                 << std::endl;
       exit(1);
       return v_s;

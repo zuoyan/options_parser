@@ -48,12 +48,17 @@ struct Taker {
   Taker(T *ptr) {
     take_ = [ptr](const MatchResult &mr) {
       TakeResult tr;
+      tr.situation = mr.situation;
       auto v_s = value()(mr.situation);
-      tr.error = get_error(v_s.first);
+      if (is_error(v_s.first)) {
+        tr.error = get_error(v_s.first);
+      }
       if (!tr.error) {
         tr.error = from_str(get_value(v_s.first), ptr);
       }
-      tr.situation = v_s.second;
+      if (!tr.error) {
+        tr.situation = v_s.second;
+      }
       return tr;
     };
   }

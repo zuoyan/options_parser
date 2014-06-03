@@ -106,7 +106,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     return situation_check([](Situation s) {
       if (s.position.off > 0) return true;
       auto v_s = Value<string>()(s);
-      if (get_error(v_s.first)) return true;
+      if (is_error(v_s.first)) return true;
       auto arg = get_value(v_s.first);
       return !arg.size() || arg[0] != '-';
     });
@@ -116,7 +116,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     return situation_check([](Situation s) {
       if (s.position.off > 0) return false;
       auto v_s = Value<string>()(s);
-      if (get_error(v_s.first)) return false;
+      if (is_error(v_s.first)) return false;
       auto arg = get_value(v_s.first);
       return arg.size() && arg[0] == '-';
     });
@@ -127,8 +127,8 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     auto func = [tf](Situation s) {
       Either<Maybe<T>> v;
       auto v_s = tf(s);
-      if (!get_error(v_s.first)) {
-        v.value = v_s.first.value;
+      if (is_ok(v_s.first)) {
+        v.value = get_value(v_s.first);
         s = v_s.second;
       }
       if (!v.value) {
@@ -155,13 +155,15 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
       Maybe<string> error;
       while (vs.size() < max) {
         auto v_s = tf(ns);
-        error = get_error(v_s.first);
-        if (error) break;
+        if (is_error(v_s.first)) {
+          error = get_error(v_s.first);
+          break;
+        }
         ns = v_s.second;
         vs.push_back(get_value(v_s.first));
       }
       if (vs.size() < min) {
-        return std::make_pair(error_message(*error.get()), saved);
+        return std::make_pair(error_message(get_error(error)), saved);
       }
       return std::make_pair(vs, ns);
     };
@@ -218,8 +220,10 @@ struct value_gather_tuple_impl {
                                         const Situation &s,
                                         Maybe<string> &error) {
     auto v_s = std::get<I>(states)(s);
-    error = get_error(v_s.first);
-    if (error) return v_s.second;
+    if (is_error(v_s.first)) {
+      error = get_error(v_s.first);
+      return v_s.second;
+    }
     std::get<I>(values) = get_value(v_s.first);
     return value_gather_tuple_h<I + 1, N>(states, values, v_s.second, error);
   }
