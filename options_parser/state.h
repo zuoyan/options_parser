@@ -64,17 +64,15 @@ struct state {
     auto tf = func_;
     auto lf = [ func, tf ](const S &s) -> std::pair<FR, S> {
       auto v_s = tf(s);
-      auto e = get_error(v_s.first);
-      if (e) {
-        return std::make_pair(error_message(*e.get()), s);
+      if (is_error(v_s.first)) {
+        return std::make_pair(error_message(get_error(v_s.first)), s);
       }
       auto fr = func(get_value(v_s.first));
-      auto fe = get_error(fr);
-      if (fe) {
-        return std::make_pair(error_message(*fe.get()), s);
+      if (is_error(fr)) {
+        return std::make_pair(error_message(get_error(fr)), s);
       }
       auto b_s = get_value(fr)(v_s.second);
-      if (get_error(b_s.first)) {
+      if (is_error(b_s.first)) {
         return std::make_pair(b_s.first, s);
       }
       return b_s;
@@ -90,7 +88,7 @@ struct state {
     return [func, tf](const S &s) {
       auto v_s = tf(s);
       auto r = options_parser::apply(func, v_s.first);
-      if (get_error(r)) {
+      if (is_error(r)) {
         return std::make_pair(r, s);
       }
       return std::make_pair(r, v_s.second);
@@ -109,8 +107,7 @@ struct state {
   typename Rebind::template rebind<V, S>::type check(
       const F &func, const string &message = "check failed") {
     return apply([func, message](const V &v) -> V {
-      auto e = get_error(v);
-      if (e) {
+      if (is_error(v)) {
         return v;
       }
       if (func(get_value(v))) {

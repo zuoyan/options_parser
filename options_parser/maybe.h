@@ -213,8 +213,28 @@ struct Either {
 };
 
 template <class T>
+inline bool is_error(const T &) {
+  return false;
+}
+
+template <class T>
+inline bool is_ok(const T &v) {
+  return !is_error(v);
+}
+
+template <class T>
 T get_value(const T &v) {
   return v;
+}
+
+template <class T>
+string get_error(const T &v) {
+  return "";
+}
+
+template <class T>
+bool is_error(const Maybe<T> &v) {
+  return !v;
 }
 
 template <class T>
@@ -224,30 +244,27 @@ T get_value(const Maybe<T> &v) {
 }
 
 template <class T>
+string get_error(const Maybe<T> &v) {
+  assert(!v);
+  return string("empty");
+}
+
+template <class T>
+bool is_error(const Either<T> &ve) {
+  return ve.other;
+}
+
+template <class T>
 T get_value(const Either<T> &ve) {
   assert(!ve.other.get());
   return *ve.value.get();
 }
 
-inline Nothing get_value(Nothing) { return nothing; }
-
 template <class T>
-Maybe<string> get_error(const T &v) {
-  return nothing;
+string get_error(const Either<T> &ve) {
+  assert(ve.other);
+  return *ve.error.get();
 }
-
-template <class T>
-Maybe<string> get_error(const Maybe<T> &v) {
-  if (v) return nothing;
-  return string("empty");
-}
-
-template <class T>
-Maybe<string> get_error(const Either<T> &ve) {
-  return ve.other;
-}
-
-inline Maybe<string> get_error(Nothing) { return nothing; }
 
 template <class F>
 struct invoker {
@@ -300,8 +317,9 @@ struct check_invoker {
 
   template <class H, class... R>
   Maybe<string> check_all(const H &h, const R &... r) const {
-    auto e = get_error(h);
-    if (e) return e;
+    if (is_error(h)) {
+      return get_error(h);
+    }
     return check_all(r...);
   }
 

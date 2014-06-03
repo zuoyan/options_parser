@@ -38,6 +38,10 @@ struct Option {
   Option *set_help_level(int help_level);
   Option *disable();
   Option *set_priority(int priority);
+  Option *append_document(Document doc);
+
+  template <class T>
+  Option *append_value_document(T *ptr);
 };
 
 struct ParseResult {
@@ -102,6 +106,14 @@ struct Parser {
   std::shared_ptr<Option> add_option(const Matcher &m, const Taker &t,
                                      const Document &d);
 
+  template <class CM, class T, class CD,
+            typename std::enable_if<!std::is_function<T>::value, int>::type = 0>
+  std::shared_ptr<Option> add_option(const CM &m, T* ptr, const CD &d) {
+    auto ret = add_option(m, Taker{ptr}, d);
+    ret->append_value_document(ptr);
+    return ret;
+  }
+
   template <class CM, class CD,
             typename std::enable_if<
                 std::is_constructible<string, const CM &>::value &&
@@ -139,10 +151,11 @@ struct Parser {
         } else {
           auto v_s = value<T>()(mr.situation);
           tr.situation = v_s.second;
-          tr.error = get_error(v_s.first);
+          if (is_error(v_s.first)) {
+            tr.error = get_error(v_s.first);
+          }
           if (!tr.error) {
-            tr.situation.circumstance.flag_set(
-                mfd.name, get_value(v_s.first));
+            tr.situation.circumstance.flag_set(mfd.name, get_value(v_s.first));
           }
         }
       }

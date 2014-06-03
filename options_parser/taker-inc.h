@@ -21,8 +21,7 @@ inline Maybe<string> Taker::to_error(const std::vector<T> &vs) {
 
 template <class T>
 inline Maybe<string> Taker::to_error(const Either<T> &ve) {
-  auto e = get_error(ve);
-  if (e) return e;
+  if (is_error(ve)) return get_error(ve);
   return to_error(get_value(ve));
 }
 

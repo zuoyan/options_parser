@@ -45,6 +45,8 @@ struct Formatter {
   }
 
   std::function<std::vector<string>(size_t width)> format_;
+
+  inline explicit operator bool() const { return !!format_; }
 };
 
 inline Formatter hang(size_t first_width, string hsep, string vsep,
@@ -108,7 +110,9 @@ inline Formatter vcat(const std::vector<Formatter> &fs) {
 template <class... M>
 inline Formatter vcat(std::vector<Formatter> fs, const Formatter &a,
                       const M &... more) {
-  fs.push_back(a);
+  if (a) {
+    fs.push_back(a);
+  }
   return vcat(fs, more...);
 }
 
@@ -121,6 +125,9 @@ struct Document {
   Document();
 
   Document(const Document &) = default;
+  Document(Document &&) = default;
+
+  Document &operator=(const Document &r) = default;
 
   template <class P, class D>
   Document(const P &prefix, const D &description);
@@ -133,6 +140,13 @@ struct Document {
 
   std::vector<string> format(size_t width) const;
 
+  void append(const Formatter &more);
+  void append_message(const Formatter &more);
+
+  // left_ right_
+  Formatter left_;
+  Formatter right_;
+  // whole document by format
   Formatter format_;
 };
 
