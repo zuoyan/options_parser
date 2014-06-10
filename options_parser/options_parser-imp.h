@@ -116,19 +116,18 @@ OPTIONS_PARSER_IMP std::string show_position(const Situation &s,
   if (s.position.off) {
     ret += " off=" + to_str(s.position.off) + ", ";
   }
-  auto p = s.position;
-  p.off = 0;
-  if (p.index < s.args.argc()) {
-    ret += " argv='" + *get_arg(s.args, p).value.get() + "'";
+  int index = s.position.index;
+  if (index < s.args.argc()) {
+    ret += " argv='" + s.args.arg_at(index) + "'";
   } else {
-    if (p.index == s.args.argc()) {
+    if (index == s.args.argc()) {
       ret += " (end of argv)";
     } else {
       ret += " argv-size=" + to_str(s.args.argc());
     }
   }
-  while (ret.size() + 6 < limit && ++p.index < s.args.argc()) {
-    auto a = *get_arg(s.args, p).value.get();
+  while (ret.size() + 6 < limit && ++index < s.args.argc()) {
+    auto a = s.args.arg_at(index);
     if (ret.size() + a.size() + 2 >= limit) {
       a.resize(limit - 5 - ret.size());
       a += " ...";
