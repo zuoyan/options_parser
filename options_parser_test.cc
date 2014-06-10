@@ -230,6 +230,56 @@ struct AddAutoRunner {
 #define DEFER DEFER_(__COUNTER__)
 #define DEFER_(COUNTER) auto PP_CAT(auto_runner_, COUNTER) = AddAutoRunner{} + [&]()
 
+struct TempFile {
+  TempFile(const std::string& tmp) {
+    tmp_ = tmp;
+    fd_ = mkstemp(&tmp_[0]);
+  }
+
+  TempFile(const std::string& tmp, int suffix) {
+    tmp_ = tmp;
+    fd_ = mkstemps(&tmp_[0], suffix);
+  }
+
+  TempFile(const TempFile&) = delete;
+
+  TempFile(TempFile&& r) {
+    tmp_ = r.tmp_;
+    fd_ = r.fd_;
+    r.fd_ = -1;
+  }
+
+  ~TempFile() {
+    if (fd_ != -1) {
+      unlink(tmp_.c_str());
+      close(fd_);
+    }
+  }
+
+  void SetContent(const std::string& content) {
+    int r = ftruncate(fd_, 0);
+    if (r != 0) {
+      std::cerr << "ftruncate failed: " << strerror(errno) << std::endl;
+      abort();
+    }
+    auto s = write(fd_, content.data(), content.size());
+    if (s != static_cast<ssize_t>(content.size())) {
+      std::cerr << "write failed: " << strerror(errno) << std::endl;
+    }
+  }
+
+  TempFile& operator=(TempFile&& r) {
+    if (this != &r) {
+      this->~TempFile();
+      new (this) TempFile(std::move(r));
+    }
+    return *this;
+  }
+
+  std::string tmp_;
+  int fd_;
+};
+
 TEST(ConfigFile) {
   options_parser::Parser app;
   app.add_option("--conf-file <config file>",
@@ -254,26 +304,29 @@ TEST(ConfigFile) {
                                return "";
                              },
                  "vi-doc");
-  char tmp[] = "options_parser_test.XXXXXX.conf";
-  int fd = mkstemps(tmp, 5);
-  CHECK_GE(fd, 0, "mkstemps failed:", strerror(errno));
-  DEFER {
-    unlink(tmp);
-    close(fd);
-    fd = -1;
-  };
-  CHECK_GE(fd, 0, "fix defer first ...");
+  TempFile tf("options_parser_test.XXXXXX.conf", 5);
+  ASSERT_GE(tf.fd_, 0, "mkstemps failed:", strerror(errno));
   std::string content =
       "--vi 1013 --func str-file-a str-file-a\n"
       "--func str-file \\\n"
       " str-file\n"
       "# ignored line\n"
       "--vi 1113";
-  CHECK_EQ(write(fd, content.data(), content.size()),
-           static_cast<ssize_t>(content.size()));
-  CHECK_PARSE(app, "--vi 113 --func str str --conf-file " + std::string(tmp),
-              "", 7, 0);
+  tf.SetContent(content);
+  CHECK_PARSE(app,
+              "--vi 113 --func str str --conf-file " + tf.tmp_, "",
+              7, 0);
   CHECK_EQ(vi, 1113);
   CHECK_EQ(va, vb);
   CHECK_EQ(va, "str-file");
+  tf = TempFile("options_parser_test.XXXXXX.conf", 5);
+  content =
+      "--vi 1213 --func str-0 str-0\n"
+      "--func str-1\n"
+      "str-2\n";
+  tf.SetContent(content);
+  CHECK_PARSE(app, "--conf-file " + tf.tmp_, "take-error", 0, 0);
+  CHECK_EQ(vi, 1213);
+  CHECK_EQ(va, vb);
+  CHECK_EQ(va, "str-0");
 }

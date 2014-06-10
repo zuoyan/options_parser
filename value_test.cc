@@ -22,125 +22,84 @@ Situation to_situation(const S&... s) {
   return situation;
 }
 
-#define CHECK_VALUE(VALUE, SITUATION, ERROR, V, INDEX, OFF)                 \
-  ({                                                                        \
-    auto v_s = VALUE(SITUATION);                                            \
-    std::string error_s = (ERROR);                                          \
-    if (error_s.size()) {                                                   \
-      ASSERT(get_error(v_s.first), "expect a error", error_s);              \
-      CHECK_EQ(*get_error(v_s.first).get(), error_s, "error not expected"); \
-    } else {                                                                \
-      ASSERT(!get_error(v_s.first), "get a error",                          \
-             *get_error(v_s.first).get());                                  \
-      CHECK_EQ(get_value(v_s.first), V);                                    \
-    }                                                                       \
-    CHECK_EQ(v_s.second.position.index, INDEX);                             \
-    CHECK_EQ(v_s.second.position.off, OFF);                                 \
+#define CHECK_GET_ERROR(V)                 \
+  ({                                       \
+    ASSERT(is_error(V), "expect a error"); \
+    get_error(V);                          \
   })
 
-#define get_error_str(V)  \
-  ({                      \
-    ASSERT(get_error(V)); \
-    *get_error(V).get();  \
+#define CHECK_GET_VALUE(V)                         \
+  ({                                               \
+    ASSERT(is_ok(V), "get a error", get_error(V)); \
+    get_error(V);                                  \
   })
+
+#define CHECK_VALUE(VALUE, SITUATION, ERROR, V, INDEX, OFF)                \
+  ({                                                                       \
+    auto v_s = VALUE(SITUATION);                                           \
+    std::string error_s = (ERROR);                                         \
+    if (error_s.size()) {                                                  \
+      CHECK_EQ(CHECK_GET_ERROR(v_s.first), error_s, "error not expected"); \
+    } else {                                                               \
+      CHECK_MATCH(CHECK_GET_VALUE(v_s.first), V);                          \
+    }                                                                      \
+    CHECK_EQ(v_s.second.position.index, INDEX);                            \
+    CHECK_EQ(v_s.second.position.off, OFF);                                \
+  })
+
+TEST(BasicChar) {
+  auto value = options_parser::value<char>();
+  auto v_s = value(to_situation("a", "b"));
+  CHECK_VALUE(value, to_situation("a", "b"), "", 'a', 1, 0);
+}
 
 TEST(BasicString) {
   auto value = options_parser::value();
-  auto v_s = value(to_situation("a string value", "more ..."));
-  CHECK_EQ(v_s.second.position.index, 1);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK_EQ(get_value(v_s.first), "a string value");
-  v_s = value(to_situation());
-  CHECK_EQ(v_s.second.position.index, 0);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(get_error(v_s.first), "expect a error");
-  CHECK_EQ(*get_error(v_s.first).get(), "no arguments rest");
+  CHECK_VALUE(value, to_situation("a string value", "more ..."), "",
+              "a string value", 1, 0);
+  CHECK_VALUE(value, to_situation(), "no arguments rest", "", 0, 0);
 }
 
 TEST(BasicInt) {
   auto value = options_parser::value<int>();
-  auto v_s = value(to_situation("13", "14", "15"));
-  CHECK_EQ(v_s.second.position.index, 1);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK_EQ(get_value(v_s.first), 13);
-  v_s = value(to_situation());
-  CHECK_EQ(v_s.second.position.index, 0);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(get_error(v_s.first), "expect a error");
-  CHECK_EQ(*get_error(v_s.first).get(), "no arguments rest");
-  v_s = value(to_situation("13a", "14"));
-  CHECK_EQ(v_s.second.position.index, 0);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(get_error(v_s.first), "expect a error");
-  CHECK_EQ(*get_error(v_s.first).get(), "from_str<i>(\"13a\") rest \"a\"");
+  CHECK_VALUE(value, to_situation("13", "14", "15"), "", 13, 1, 0);
+  CHECK_VALUE(value, to_situation(), "no arguments rest", -1, 0, 0);
+  CHECK_VALUE(value, to_situation("13a", "14"),
+              "from_str<i>(\"13a\") rest \"a\"", -1, 0, 0);
 }
 
 TEST(BasicBool) {
   auto value = options_parser::value<bool>().many();
-  auto v_s = value(to_situation("t", "true", "false", "1", "0", "f", "False",
-                                "True", "100"));
-  CHECK_EQ(v_s.second.position.index, 8);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)),
-           test::Container<bool>({1, 1, 0, 1, 0, 0, 0, 1}));
+  CHECK_VALUE(
+      value,
+      to_situation("t", "true", "false", "1", "0", "f", "False", "True", "100"),
+      "", test::ContainerEQ(std::vector<bool>{1, 1, 0, 1, 0, 0, 0, 1}), 9, 0);
 }
 
 TEST(ManyInt) {
   auto value = options_parser::value<int>().many();
-  auto v_s = value(to_situation("13", "14", "15"));
-  CHECK_EQ(v_s.second.position.index, 3);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)),
-           test::Container<int>({13, 14, 15}));
-  v_s = value(to_situation());
-  CHECK_EQ(v_s.second.position.index, 0);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)), test::Container<int>());
-  v_s = value(to_situation("13", "14a", "15"));
-  CHECK_EQ(v_s.second.position.index, 1);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)),
-           test::Container<int>({13}));
-
-  v_s = options_parser::value<int>().cons(value)(
-      to_situation("13", "14", "15", "16a"));
-  CHECK_EQ(v_s.second.position.index, 3);
-  CHECK_EQ(v_s.second.position.off, 0);
-  ASSERT(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)),
-           test::Container<int>({13, 14, 15}));
-
-  v_s = options_parser::value<int>().cons(value)(
-      to_situation("13", "14a", "15", "16a"));
-  CHECK_EQ(v_s.second.position.index, 1);
-  CHECK_EQ(v_s.second.position.off, 0);
-  ASSERT(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)),
-           test::Container<int>({13}));
+  CHECK_VALUE(value, to_situation("13", "14", "15"), "",
+              test::ContainerEQ(std::vector<int>{13, 14, 15}), 3, 0);
+  CHECK_VALUE(value, to_situation(), "", test::ContainerEQ(std::vector<int>{}),
+              0, 0);
+  CHECK_VALUE(value, to_situation("13", "14a", "15"), "",
+              test::ContainerEQ(std::vector<int>{{13}}), 1, 0);
+  CHECK_VALUE(options_parser::value<int>().cons(value),
+              to_situation("13", "14", "15", "16a"), "",
+              test::ContainerEQ(std::vector<int>{13, 14, 15}), 3, 0);
+  CHECK_VALUE(options_parser::value<int>().cons(value),
+              to_situation("13", "14a", "15", "16a"), "",
+              test::ContainerEQ(std::vector<int>{{13}}), 1, 0);
 }
 
 TEST(Gather) {
   auto value = value_gather(options_parser::value<int>(),
                             options_parser::value<std::string>(),
                             options_parser::value<double>());
-  auto v_s = value(to_situation("13", "a string", "3.14"));
-  CHECK_EQ(v_s.second.position.index, 3);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  static_assert(std::tuple_size<decltype(get_value(v_s.first))>::value == 3,
-                "fix me first");
-  CHECK_EQ(std::get<0>(get_value(v_s.first)), 13);
-  CHECK_EQ(std::get<1>(get_value(v_s.first)), "a string");
-  CHECK_EQ(std::get<2>(get_value(v_s.first)), 3.14);
-
-  v_s = value(to_situation("13", "a string", "3.14a"));
-  CHECK_EQ(v_s.second.position.index, 0);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK_EQ(get_error_str(v_s.first), "from_str<d>(\"3.14a\") rest \"a\"");
+  CHECK_VALUE(value, to_situation("13", "a string", "3.14"), "",
+              test::TupleEQ(13, "a string", 3.14), 3, 0);
+  CHECK_VALUE(value, to_situation("13", "a string", "3.14a"),
+              "from_str<d>(\"3.14a\") rest \"a\"", test::AnyFalse(), 0, 0);
 }
 
 TEST(Check) {
@@ -148,27 +107,18 @@ TEST(Check) {
                                                return n.size() && n[0] == '-';
                                              },
                                              "should starts with -");
-  auto v_s = value(to_situation("13", "-a"));
-  CHECK_EQ(v_s.second.position.index, 0);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK_EQ(get_error_str(v_s.first), "should starts with -");
-
-  v_s = value(to_situation("-13", "-a"));
-  CHECK_EQ(v_s.second.position.index, 1);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  CHECK_EQ(get_value(v_s.first), "-13");
+  CHECK_VALUE(value, to_situation("13", "-a"),
+              "should starts with -", "", 0, 0);
+  CHECK_VALUE(value, to_situation("-13", "-a"), "", "-13", 1, 0);
 }
 
 TEST(Cons) {
   auto vs =
       options_parser::value().cons(options_parser::value().not_option().many());
-  auto v_s = vs(to_situation("-first", "and", "all", "rest", "-not option"));
-  CHECK_EQ(v_s.second.position.index, 4);
-  CHECK_EQ(v_s.second.position.off, 0);
-  CHECK(!get_error(v_s.first));
-  CHECK_EQ(test::to_container(get_value(v_s.first)),
-           (test::Container<std::string>{"-first", "and", "all", "rest"}));
+  CHECK_VALUE(vs, to_situation("-first", "and", "all", "rest", "-not option"),
+              "", test::ContainerEQ(
+                      std::vector<std::string>{"-first", "and", "all", "rest"}),
+              4, 0);
 }
 
 }  // namespace options_parser
