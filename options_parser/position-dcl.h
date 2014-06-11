@@ -33,14 +33,6 @@ struct PositionValue {
           value.bind(func), start, end));
 };
 
-inline PositionValue<char> get_char(const Arguments &args, const Position &pos);
-
-inline PositionValue<string> get_arg(const Arguments &args,
-                                     const Position &pos);
-
-inline PositionValue<string> get_match_arg(const Arguments &args,
-                                           const Position &pos,
-                                           const char prefix, bool strip);
 class Option;
 class Parser;
 
@@ -73,15 +65,20 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
 
   Value() {
     this->func_ = [](Situation s) -> std::pair<Either<T>, Situation> {
-      auto os = s;
-      auto r = get_arg(s.args, s.position);
-      s.position = r.end;
-      s.args = s.args;
-      if (!r.value) {
+      if (s.position.index >= s.args.argc()) {
         return std::make_pair(error_message("no arguments rest"), s);
       }
+      auto os = s;
+      auto a = s.args.arg_at(s.position.index);
+      if (a.size() >= (size_t)s.position.off) {
+        a = a.substr(s.position.off);
+      } else {
+        a = "";
+      }
+      s.position.index += 1;
+      s.position.off = 0;
       T val;
-      auto ec = from_str(*r.value.get(), &val);
+      auto ec = from_str(a, &val);
       if (ec) {
         return std::make_pair(error_message(*ec.get()), os);
       }
@@ -102,24 +99,18 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     });
   }
 
-  Value not_option() const {
-    return situation_check([](Situation s) {
-      if (s.position.off > 0) return true;
-      auto v_s = Value<string>()(s);
-      if (is_error(v_s.first)) return true;
-      auto arg = get_value(v_s.first);
-      return !arg.size() || arg[0] != '-';
-    });
-  }
-
-  Value is_option() const {
-    return situation_check([](Situation s) {
-      if (s.position.off > 0) return false;
-      auto v_s = Value<string>()(s);
-      if (is_error(v_s.first)) return false;
-      auto arg = get_value(v_s.first);
-      return arg.size() && arg[0] == '-';
-    });
+  Value not_option(const string &prefix = "-") {
+    auto tf = this->func_;
+    auto func = [ tf, prefix ](Situation s) -> std::pair<Either<T>, Situation> {
+      if (s.position.off == 0) {
+        auto a = s.args.arg_at(s.position.index);
+        if (starts_with(a, prefix)) {
+          return std::make_pair(error_message("expect a non option"), s);
+        }
+      }
+      return tf(s);
+    };
+    return func;
   }
 
   Value<Maybe<T>> ignore_error() const {
@@ -197,8 +188,6 @@ template <class T = string>
 Value<T> value() {
   return Value<T>();
 }
-
-Value<string> match_value(char prefix = '-', bool strip = false);
 
 template <class... States>
 struct value_gather_inner_value_type {

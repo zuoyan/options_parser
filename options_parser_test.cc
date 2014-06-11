@@ -55,6 +55,12 @@ TEST(Basic) {
   CHECK_PARSE(parser, "--int 81 --str 'a string'", "", 4, 0);
   CHECK_EQ(vi, 81);
   CHECK_EQ(vs, "a string");
+  parser.add_option("/string-value <string value>", &vs, "string value");
+  CHECK_PARSE(parser, "/string-value 'another string'", "", 2, 0);
+  CHECK_EQ(vs, "another string");
+  parser.add_option("/string <string value>", &vs, "string value");
+  CHECK_PARSE(parser, "/string 'prefix string'", "", 2, 0);
+  CHECK_EQ(vs, "prefix string");
 }
 
 TEST(Function) {
@@ -148,15 +154,15 @@ TEST(Flags) {
               "", 16, 0);
   auto pr = parser.parse_string("-b --directory");
   auto c = pr.situation.circumstance;
-  CHECK(c.flag<bool>("escape"), "circumstance", c.to_str());
-  CHECK(c.flag<bool>("directory"), "circumstance", c.to_str());
-  CHECK(!c.flag<bool>("all"), "circumstance", c.to_str());
+  CHECK(c.flag<bool>("--escape"), "circumstance", c.to_str());
+  CHECK(c.flag<bool>("--directory"), "circumstance", c.to_str());
+  CHECK(!c.flag<bool>("--all"), "circumstance", c.to_str());
   pr = parser.parse_string("-B --color=color-when", pr.situation);
-  CHECK(c.flag<bool>("ignore-backups"), "circumstance", c.to_str());
-  CHECK(c.flag("color"), "circumstance", c.to_str());
-  CHECK_EQ(*c.flag("color"), "color-when", "circumstance",
+  CHECK(c.flag<bool>("--ignore-backups"), "circumstance", c.to_str());
+  CHECK(c.flag("--color"), "circumstance", c.to_str());
+  CHECK_EQ(*c.flag("--color"), "color-when", "circumstance",
            c.to_str());
-  CHECK(c.flag<bool>("escape"), "circumstance", c.to_str());
+  CHECK(c.flag<bool>("--escape"), "circumstance", c.to_str());
 }
 
 TEST(MultiMany) {

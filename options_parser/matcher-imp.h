@@ -5,6 +5,95 @@
 #include "options_parser/position-imp.h"
 
 namespace options_parser {
+
+OPTIONS_PARSER_IMP MatchDescription::MatchDescription(const string &d)
+    : doc(d) {
+  num_args = 0;
+  is_arg_optional = false;
+  size_t off = 0;
+  while (off < d.size() && isspace(d[off])) ++off;
+  if (off == doc.size()) return;
+  prefix = d[off];
+  auto desc_split = [](string s, string prefix) {
+    std::vector<string> ret;
+    size_t off = 0;
+    while (off < s.size()) {
+      if (isspace(s[off]) || s[off] == ',') {
+        ++off;
+        continue;
+      }
+      if (s[off] == '[') {
+        ret.push_back(s.substr(off, 1));
+        ++off;
+        if (off < s.size() && s[off] == '=') ++off;
+        continue;
+      }
+      if (s[off] == ']') {
+        ret.push_back(s.substr(off, 1));
+        ++off;
+        continue;
+      }
+      if (s[off] == prefix.front()) {
+        if (off + 1 < s.size() && s[off + 1] != prefix.front()) {
+          ret.push_back(s.substr(off, 2));
+          off += 2;
+          if (off < s.size() && s[off] == '=') {
+            ++off;
+          }
+          continue;
+        }
+        size_t n = off;
+        while (n < s.size() && !isspace(s[n]) && !strchr("[]=,", s[n])) {
+          ++n;
+        }
+        ret.push_back(s.substr(off, n - off));
+        off = n;
+        if (off < s.size() && s[off] == '=') {
+          ++off;
+        }
+        continue;
+      }
+      if (s[off] == '<') {
+        size_t n = s.find('>', off);
+        if (n >= s.size()) {
+          n = s.size();
+        } else {
+          ++n;
+        }
+        ret.push_back(s.substr(off, n - off));
+        off = n;
+        continue;
+      }
+      size_t n = off;
+      while (n < s.size() && !isspace(s[n])) ++n;
+      ret.push_back(s.substr(off, n - off));
+      off = n;
+    }
+    return ret;
+  };
+
+  std::vector<string> vs = desc_split(doc, prefix);
+  is_arg_optional = std::find(vs.begin(), vs.end(), "[") != vs.end();
+  {
+    auto it = std::remove_if(vs.begin(), vs.end(),
+                             [](string s) { return s == "[" || s == "]"; });
+    vs.erase(it, vs.end());
+  }
+  off = 0;
+  while (off < vs.size()) {
+    assert(starts_with(vs[off], prefix));
+    opts.push_back(vs[off]);
+    size_t n = off + 1;
+    while (n < vs.size() && !starts_with(vs[n], prefix)) ++n;
+    size_t na = n - off - 1;
+    if (num_args < na) num_args = na;
+    off = n;
+  }
+  if (opts.size()) {
+    name = opts.back();
+  }
+}
+
 OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
   match_ = [priority](const Situation &s) {
     MatchResult mr;
@@ -15,72 +104,62 @@ OPTIONS_PARSER_IMP Matcher::Matcher(Priority priority) {
   };
 }
 
-OPTIONS_PARSER_IMP Matcher::Matcher(const MatchFromDescription &mfd,
-                                    Maybe<Value<string>> arg_getter) {
-  match_ = [mfd, arg_getter](const Situation &s) {
-    std::pair<Either<string>, Situation> m_s;
-    if (arg_getter) {
-      m_s = (*arg_getter.get())(s);
-    } else {
-      if (mfd.is_raw) {
-        m_s = value()(s);
-      } else {
-        m_s = match_value('-', true)(s);
-      }
-    }
+OPTIONS_PARSER_IMP Matcher::Matcher(const MatchDescription &md) {
+  match_ = [md](const Situation &s) {
     MatchResult mr;
     mr.priority = 0;
     mr.start = s.position;
     mr.situation = s;
+    auto first_s = s;
+    first_s.position.off = 0;
+    auto first_value_s = value()(first_s);
+    if (is_error(first_value_s.first)) {
+      return mr;
+    }
+    string first_arg = get_value(first_value_s.first);
+    std::pair<Either<string>, Situation> m_s;
+    m_s = value()(s);
     if (is_error(m_s.first)) {
       return mr;
     }
-    mr.situation = m_s.second;
-    auto arg = *m_s.first.value.get();
-    string first_arg;
-    {
-      auto t = s;
-      t.position.off = 0;
-      first_arg = get_value(value()(t).first.value);
+    auto arg = get_value(m_s.first);
+    if (arg.empty()) {
+      return mr;
     }
-    if (mfd.is_raw || (s.position.off == 0 && starts_with(first_arg, "--"))) {
-      for (const string &o : mfd.opts) {
-        if (o == arg) {
+    if (arg.find('=') != string::npos) {
+      auto p = arg.find('=');
+      auto l = arg.size() - p - 1;
+      m_s.second.position.index--;
+      m_s.second.position.off = first_arg.size() - l;
+      arg = arg.substr(0, p);
+      m_s.first = arg;
+    }
+    mr.situation = m_s.second;
+    if (s.position.off == 0) {
+      for (const string &o : md.opts) {
+        if (arg == o) {
           mr.priority = MATCH_EXACT;
           return mr;
         }
       }
-    }
-    if (arg.size() && s.position.off == 0 &&
-        (mfd.is_raw || starts_with(first_arg, "--"))) {
-      for (const string &o : mfd.opts) {
-        if (arg.size() < o.size() && o.compare(0, arg.size(), arg) == 0) {
+      for (const string &o : md.opts) {
+        if (starts_with(o, arg)) {
           mr.priority = MATCH_PREFIX;
           return mr;
         }
       }
-    }
-    if (mfd.is_raw) {
-      mr.situation.position = s.position;
-      return mr;
-    }
-    if (!arg_getter && arg.size() && !starts_with(first_arg, "--")) {
-      for (const string &o : mfd.opts) {
-        if (o.size() != 1) continue;
-        if (arg[0] != o[0]) continue;
-        mr.priority = MATCH_EXACT;
-        size_t off = s.position.off;
-        if (off == 0 && off < first_arg.size() && first_arg[off] == '-') ++off;
-        ++off;
-        if (off < first_arg.size()) {
-          mr.situation = s;
-          if (first_arg[off] == '=') {
-            mr.situation.position.off = off + 1;
-          } else {
-            mr.situation.position.off = off;
-          }
+    } else {
+      for (const string &o : md.opts) {
+        if (arg == o.substr(md.prefix.size())) {
+          mr.priority = MATCH_EXACT;
+          return mr;
         }
-        return mr;
+      }
+      for (const string &o : md.opts) {
+        if (starts_with(o.substr(md.prefix.size()), arg)) {
+          mr.priority = MATCH_EXACT;
+          return mr;
+        }
       }
     }
     mr.situation.position = s.position;

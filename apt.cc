@@ -51,19 +51,19 @@ int main(int argc, char *argv[]) {
 
   for (auto c_h : get_commands) {
     auto c = c_h.first;
-    get_cli.add_option("|" + c, [&, c]() {
-                                  result_command = "apt-get";
-                                  result.push_back(c);
-                                  cli.toggle();
-                                  get_cli.toggle();
-                                },
+    get_cli.add_option(c, [&, c]() {
+                            result_command = "apt-get";
+                            result.push_back(c);
+                            cli.toggle();
+                            get_cli.toggle();
+                          },
                        c_h.second);
   }
 
   get_cli.add_option("-q", [&]() { result.push_back("-q"); },
                      "Loggable output - no progress indicator");
 
-  get_cli.add_option("|-qq", [&]() { result.push_back("-qq"); },
+  get_cli.add_option("-qq", [&]() { result.push_back("-qq"); },
                      "No output except for errors");
 
   get_cli.add_option("-d", [&]() { result.push_back("-d"); },
@@ -113,12 +113,12 @@ int main(int argc, char *argv[]) {
 
   for (auto c_h : cache_commands) {
     auto c = c_h.first;
-    cache_cli.add_option("|" + c, [&, c]() {
-                                    result_command = "apt-cache";
-                                    result.push_back(c);
-                                    cli.toggle();
-                                    cache_cli.toggle();
-                                  },
+    cache_cli.add_option(c, [&, c]() {
+                              result_command = "apt-cache";
+                              result.push_back(c);
+                              cli.toggle();
+                              cache_cli.toggle();
+                            },
                          c_h.second);
   }
 

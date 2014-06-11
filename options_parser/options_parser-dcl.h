@@ -120,8 +120,8 @@ struct Parser {
                     std::is_constructible<string, const CD &>::value,
                 int>::type = 0>
   std::shared_ptr<Option> add_option(const CM &m, const Taker &t, const CD &d) {
-    MatchFromDescription mfd(m);
-    return add_option(Matcher(mfd), t, {mfd.doc, d});
+    MatchDescription md(m);
+    return add_option(Matcher(md), t, {md.doc, d});
   }
 
   template <class CM = string, class CD = string>
@@ -131,18 +131,18 @@ struct Parser {
   template <class T, class CO, class CD>
   std::shared_ptr<Option> add_flag(const CO &opts, const CD &doc,
                                    const T &default_value = T()) {
-    MatchFromDescription mfd(opts);
-    auto taker = [mfd, default_value](const MatchResult &mr) {
+    MatchDescription md(opts);
+    auto taker = [md, default_value](const MatchResult &mr) {
       TakeResult tr;
-      if (mfd.num_args > 1) {
-        tr.error = "invalid flag " + mfd.name;
+      if (md.num_args > 1) {
+        tr.error = "invalid flag " + md.name;
         return tr;
       }
-      if (mfd.num_args == 1) {
-        if (mfd.is_arg_optional) {
+      if (md.num_args == 1) {
+        if (md.is_arg_optional) {
           auto v_s = value<T>().optional()(mr.situation);
           tr.situation = v_s.second;
-          T *ptr = tr.situation.circumstance.flag<T>(mfd.name, default_value);
+          T *ptr = tr.situation.circumstance.flag<T>(md.name, default_value);
           if (get_value(v_s.first)) {
             *ptr = get_value(get_value(v_s.first));
           } else {
@@ -155,13 +155,13 @@ struct Parser {
             tr.error = get_error(v_s.first);
           }
           if (!tr.error) {
-            tr.situation.circumstance.flag_set(mfd.name, get_value(v_s.first));
+            tr.situation.circumstance.flag_set(md.name, get_value(v_s.first));
           }
         }
       }
-      if (mfd.num_args == 0) {
+      if (md.num_args == 0) {
         tr.situation = mr.situation;
-        tr.situation.circumstance.flag_set(mfd.name,
+        tr.situation.circumstance.flag_set(md.name,
                                            default_value);
       }
       return tr;
@@ -171,16 +171,16 @@ struct Parser {
 
   template <class CD>
   std::shared_ptr<Option> add_flag(const string &opts, const CD &doc) {
-    MatchFromDescription mfd(opts);
-    if (mfd.num_args == 0) {
+    MatchDescription md(opts);
+    if (md.num_args == 0) {
       return add_flag(opts, doc, true);
     }
     return add_flag<string>(opts, doc, string());
   }
 
   std::shared_ptr<Option> add_flag(const string &opts, const Document &doc) {
-    MatchFromDescription mfd(opts);
-    if (mfd.num_args == 0) {
+    MatchDescription md(opts);
+    if (md.num_args == 0) {
       return add_flag(opts, doc, true);
     }
     return add_flag<string>(opts, doc, string());

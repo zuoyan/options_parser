@@ -22,123 +22,28 @@ struct MatchResult {
   Priority priority;
 };
 
-struct MatchFromDescription {
+// Description string for match
+//
+// The first non space character is the prefix(usually '-'), we'll try to parse
+// it like a long and short options descriptions, for example, see 'ls --help'.
+//
+// Example:
+//
+// '-a, --author AUTHOR' will matches '-a=name', '-a name', '-aname', '--author
+//  name', '--author=name', and even '--autho name'(prefix match).
+//
+// If we have added -a, -u, -t, -h, -o, -r, then -author will match all of them.
+//
+// '/a, /author AUTHOR' will matches '/a=name', '/a name', '/author=name'.
+struct MatchDescription {
+  string prefix;
   string doc;
-  string name;
   std::vector<string> opts;
+  string name;
   bool is_arg_optional;
   size_t num_args;
-  bool is_raw;
 
-  void init_not_doc() {
-    if (doc[0] == '|') {
-      is_raw = true;
-      opts = split(doc.substr(1), "|");
-      if (opts.size()) name = opts.back();
-      doc = join(opts, ", ");
-      return;
-    }
-    opts = split(doc, "|");
-    if (opts.size()) name = opts.back();
-    doc = join(opts, ", ",
-               [](string o) { return (o.size() == 1 ? "-" : "--") + o; });
-  }
-
-  MatchFromDescription(const string &d) : doc(d) {
-    num_args = 0;
-    is_arg_optional = false;
-    is_raw = false;
-
-    {
-      size_t off = 0;
-      while (off < d.size() && isspace(d[off])) ++off;
-      if (off == doc.size()) return;
-      if (doc[off] != '-') {
-        init_not_doc();
-        return;
-      }
-    }
-
-    auto desc_split = [](string s) {
-      std::vector<string> ret;
-      size_t off = 0;
-      while (off < s.size()) {
-        if (isspace(s[off]) || s[off] == ',') {
-          ++off;
-          continue;
-        }
-        if (s[off] == '[') {
-          ret.push_back(s.substr(off, 1));
-          ++off;
-          if (off < s.size() && s[off] == '=') ++off;
-          continue;
-        }
-        if (s[off] == ']') {
-          ret.push_back(s.substr(off, 1));
-          ++off;
-          continue;
-        }
-        if (s[off] == '-') {
-          if (off + 1 < s.size() && s[off + 1] != '-') {
-            ret.push_back(s.substr(off, 2));
-            off += 2;
-            if (off < s.size() && s[off] == '=') {
-              ++off;
-            }
-            continue;
-          }
-          size_t n = off;
-          while (n < s.size() && !isspace(s[n]) && !strchr("[]=,", s[n])) {
-            ++n;
-          }
-          ret.push_back(s.substr(off, n - off));
-          off = n;
-          if (off < s.size() && s[off] == '=') {
-            ++off;
-          }
-          continue;
-        }
-        if (s[off] == '<') {
-          size_t n = s.find('>', off);
-          if (n >= s.size()) {
-            n = s.size();
-          } else {
-            ++n;
-          }
-          ret.push_back(s.substr(off, n - off));
-          off = n;
-          continue;
-        }
-        size_t n = off;
-        while (n < s.size() && !isspace(s[n])) ++n;
-        ret.push_back(s.substr(off, n - off));
-        off = n;
-      }
-      return ret;
-    };
-
-    std::vector<string> vs = desc_split(doc);
-    is_arg_optional = std::find(vs.begin(), vs.end(), "[") != vs.end();
-    {
-      auto it = std::remove_if(vs.begin(), vs.end(),
-                               [](string s) { return s == "[" || s == "]"; });
-      vs.erase(it, vs.end());
-    }
-
-    size_t off = 0;
-    while (off < vs.size()) {
-      assert(vs[off][0] == '-');
-      size_t o = 0;
-      while (o < vs[off].size() && vs[off][o] == '-') ++o;
-      opts.push_back(vs[off].substr(o));
-      size_t n = off + 1;
-      while (n < vs.size() && vs[n][0] != '-') ++n;
-      size_t na = n - off - 1;
-      if (num_args < na) num_args = na;
-      off = n;
-    }
-    if (opts.size()) name = opts.back();
-  }
+  MatchDescription(const string &d);
 };
 
 struct Matcher {
@@ -191,13 +96,12 @@ struct Matcher {
   }
 
   template <class S, decltype(*(string *)0 = std::declval<S>(), 0) = 0>
-  Matcher(S &&s, Maybe<Value<string>> arg_getter = nothing) {
-    MatchFromDescription from_desc(s);
-    new (this) Matcher(from_desc, arg_getter);
+  Matcher(S &&s) {
+    MatchDescription d(s);
+    new (this) Matcher(d);
   }
 
-  Matcher(const MatchFromDescription &mfd,
-          Maybe<Value<string>> arg_getter = nothing);
+  Matcher(const MatchDescription &md);
 
   MatchResult operator()(const Situation &s) const;
 
