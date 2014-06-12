@@ -239,7 +239,7 @@ struct AddAutoRunner {
 TEST(ConfigFile) {
   options_parser::Parser app;
   app.add_option("--conf-file <config file>",
-                 &options_parser::take_config_file,
+                 options_parser::config_file().ignore_value(),
                  "conf from file");
   std::string va, vb;
   app.add_option("--func A B", [&](std::string a, std::string b) {

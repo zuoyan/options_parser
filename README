@@ -38,29 +38,23 @@ make
 
 ## Examples
 
-For basic example, see file stats.cc and ls.cc.
+For basic example, see file [stats.cc](https://github.com/zuoyan/options_parser/blob/master/stats.cc) and [ls.cc](https://github.com/zuoyan/options_parser/blob/master/ls.cc)
 
-This library can parse most program --help message as flags. For example,
+This library can parse most program --help message as flags, as demoed in
+[ls.cc](https://github.com/zuoyan/options_parser/blob/master/ls.cc).
 
-```bash
-# in options_parser/build directory
-ls --help | sed -n '/^  /p' | grep -ve --help > ls.flag
-# known problem: Currently, ls --help prints '-p, --indicator-style=slash', which is ambiguous with '--indicator-style=WORD'.
-make options_parser_test
-./options_parser_test --flag-file ls.flag -lh
-./options_parser_test --flag-file ls.flag --help
-```
+This library can also parse configuration file lines, as demoed in
+[options_parser_test.cc:ConfigFile](https://github.com/zuoyan/options_parser/blob/master/options_parser_test.cc).
 
-This library can also parse configuration file lines. For example,
+```c++
+options_parser::Parser parser("usage and info", "further info ...");
+parser.add_parser(options_parser::parser()); // add default global parser
+parser.add_option("--int NUM", &vi, assigned int value");
+parser.add_option("--str STRING", &vs, "assigned string value");
+parser.add_option("--func <int-arg> <string-arg> <double-arg>",
+  [&](int vi, std::string vs, double vd) {
 
-```bash
-# in options_parser/build directory
-echo "# comments as this, are ignored" >> t.conf
-echo "--int 42" >> t.conf
-# $ and \ are also parsed as shell
-echo '--func $HOME \' >> t.conf
-echo ' $USER' >> t.conf
-./options_parser_test --config-file t.conf
+}, "call the function over arguments");
 ```
 
 ## Document

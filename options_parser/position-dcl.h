@@ -130,6 +130,10 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     return func;
   }
 
+  Value<void_> ignore_value() const {
+    return this->apply([](const T &v) {});
+  }
+
   Value<Maybe<T>> optional() const {
     return situation_check([](const Situation &s) {
                              return s.position.off > 0;

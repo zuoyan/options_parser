@@ -57,3 +57,5 @@ SET_TESTS_PROPERTIES(secure_sharing_check PROPERTIES DEPENDS secure_sharing_comb
 
 ADD_EXECUTABLE(circumstance_test circumstance_test.cc)
 ADD_TEST(circumstance_test circumstance_test)
+
+ADD_EXECUTABLE(example_basic example_basic.cc)

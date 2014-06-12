@@ -215,25 +215,27 @@ Parser::parse_lines(const std::vector<string> &lines, Situation s) {
                      s);
 }
 
-OPTIONS_PARSER_IMP TakeResult take_config_file(const MatchResult &mr) {
-  auto v_s = value()(mr.situation);
-  TakeResult tr;
-  tr.situation = v_s.second;
-  if (is_error(v_s.first)) {
-    tr.error = get_error(v_s.first);
-    return tr;
-  }
-  auto cli = tr.situation.parser;
-  assert(cli);
-  auto pr = cli->parse_file(get_value(v_s.first), tr.situation);
-  if (pr.error) {
-    tr.error = pr.error;
-    if (pr.error_full) tr.error = pr.error_full;
-  }
-  tr.situation = pr.situation;
-  tr.situation.args = v_s.second.args;
-  tr.situation.position = v_s.second.position;
-  return tr;
+OPTIONS_PARSER_IMP Value<std::string> config_file() {
+  return value().bind([](string filename) {
+    return [filename](Situation s) -> std::pair<Either<string>, Situation> {
+      auto cli = s.parser;
+      assert(cli);
+      auto pr = cli->parse_file(filename, s);
+      string error;
+      if (pr.error) {
+        error = get_value(pr.error);
+        if (pr.error_full) {
+          error = get_value(pr.error_full);
+        }
+      }
+      if (error.size()) {
+        return std::make_pair(error_message("when parsing config file '" +
+                                            filename + "':" + error),
+                              s);
+      }
+      return std::make_pair(filename, s);
+    };
+  });
 }
 
 OPTIONS_PARSER_IMP ParseResult
