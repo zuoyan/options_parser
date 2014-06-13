@@ -51,8 +51,32 @@ struct ProgramPattern {
   std::vector<std::map<string, string>> dicts;
 };
 
-int run_prog_pattern(std::vector<string> prog, std::map<string, string>& dict) {
-  int pid = fork();
+string escape_double_quote(const string& s) {
+  string r;
+  for (int c : s) {
+    if (c == '\\') {
+      r += "\\\\";
+    } else if (c == '"') {
+      r += "\\\"";
+    } else if (c == '$') {
+      r += "\\$";
+    } else {
+      r += static_cast<char>(c);
+    }
+  }
+  return r;
+}
+
+string quote_argument(const string& s) {
+  if (std::all_of(s.begin(), s.end(), ::isalnum)) {
+    return s;
+  }
+  return "\"" + escape_double_quote(s) + "\"";
+}
+
+int run_prog_pattern(std::vector<string> prog, std::map<string, string>& dict,
+                     bool dry_run) {
+  int pid = dry_run ? 0 : fork();
   if (pid == -1) {
     std::cerr << "fork failed:" << strerror(errno) << std::endl;
     exit(1);
@@ -62,22 +86,26 @@ int run_prog_pattern(std::vector<string> prog, std::map<string, string>& dict) {
     for (auto& a : prog) {
       a = replace_pattern(a, dict);
     }
-    std::vector<const char*> prog_cargv;
-    for (const auto& a : prog) {
-      prog_cargv.push_back(a.c_str());
+    if (dry_run) {
+      std::cerr << options_parser::join(prog, " ", &quote_argument)
+                << std::endl;
+    } else {
+      std::vector<const char*> prog_cargv;
+      for (const auto& a : prog) {
+        prog_cargv.push_back(a.c_str());
+      }
+      prog_cargv.push_back(nullptr);
+      execvp(prog_cargv.front(), (char* const*)&prog_cargv[0]);
+      std::cerr << "execvp " << options_parser::join(prog, " ", quote_argument)
+                << " failed: " << strerror(errno) << std::endl;
+      exit(127);
     }
-    prog_cargv.push_back(nullptr);
-    execvp(prog_cargv.front(), (char* const*)&prog_cargv[0]);
-    std::cerr << "execvp " << options_parser::join(prog, " ", [](string a) {
-                                return "'" + a + "'";
-                              }) << " failed: " << strerror(errno) << std::endl;
-    exit(127);
   }
   return pid;
 }
 
 void run_prog_patterns(std::vector<ProgramPattern>& prog_patterns,
-                       size_t parallel_number) {
+                       size_t parallel_number, bool dry_run) {
   if (prog_patterns.size() == 0) return;
   size_t num_job = 0;
   for (auto& pp : prog_patterns) {
@@ -104,8 +132,11 @@ void run_prog_patterns(std::vector<ProgramPattern>& prog_patterns,
         ++pattern_index;
         dict_it = prog_patterns[pattern_index].dicts.begin();
       }
-      int pid = run_prog_pattern(prog_patterns[pattern_index].prog, *dict_it++);
-      jobs.insert(pid);
+      int pid = run_prog_pattern(prog_patterns[pattern_index].prog, *dict_it++,
+                                 dry_run);
+      if (pid > 0) {
+        jobs.insert(pid);
+      }
     }
     if (!jobs.size()) break;
     int status = 0;
@@ -142,6 +173,7 @@ int main(int argc, char* argv[]) {
 
   std::vector<ProgramPattern> prog_patterns;
   int parallel_number = 2;
+  bool dry_run = false;
 
   auto sep_values = [](string sep) {
     return options_parser::value()
@@ -212,8 +244,16 @@ int main(int argc, char* argv[]) {
     prog_patterns.back().prog = prog;
   };
 
+  auto bool_value = [](bool dft) {
+    return options_parser::value<bool>().optional().apply([dft](
+        options_parser::Maybe<bool> v) { return v ? get_value(v) : dft; });
+  };
+
   app.add_parser(options_parser::parser());
   app.add_help();
+  app.add_option("--dry-run[=true/false]",
+                 bool_value(true).assign(&dry_run).ignore_value(),
+                 "dry run, i.e. print and exit");
   app.add_option("--prog SEP <prog and argument pattern>... SEP",
                  options_parser::value().bind(sep_values).apply([&](
                      std::vector<string> vs) { add_prog_pattern(vs); }),
@@ -269,37 +309,7 @@ int main(int argc, char* argv[]) {
                  "remove variable from environment");
   app.parse(argc, argv).check_print();
 
-  if (0) {
-    size_t num_job = 0;
-    for (auto& pp : prog_patterns) {
-      std::cout << "\nprog pattern: "
-                << options_parser::join(pp.prog, " ",
-                                        [](string a) { return "'" + a + "'"; })
-                << std::endl;
-      for (const auto& dict : pp.dicts) {
-        std::cout << "dict: {"
-                  << options_parser::join(dict, ", ",
-                                          [](std::pair<string, string> kv) {
-                       return kv.first + ":" + "'" + kv.second + "'";
-                     }) << " }" << std::endl;
-      }
-      if (pp.dicts.size() == 0) {
-        pp.dicts.emplace_back();
-      }
-      for (auto& dict : pp.dicts) {
-        dict["JOB_INDEX"] = std::to_string(num_job++);
-        auto prog = pp.prog;
-        for (string& a : prog) {
-          a = replace_pattern(a, dict);
-        }
-        std::cout << "prog: " << options_parser::join(prog, " ", [](string a) {
-                                   return "'" + a + "'";
-                                 }) << std::endl;
-      }
-    }
-  }
-
-  run_prog_patterns(prog_patterns, parallel_number);
+  run_prog_patterns(prog_patterns, parallel_number, dry_run);
 
   return 1;
 }

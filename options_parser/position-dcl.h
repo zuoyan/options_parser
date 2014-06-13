@@ -167,6 +167,14 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
 
   Value<std::vector<T>> times(size_t n) const { return many(n, n); }
 
+  template <class U>
+  Value assign(U ptr) {
+    return this->apply([ptr](const T &v) {
+      *ptr = v;
+      return v;
+    });
+  }
+
   template <class VS>
   Value<VS> cons(const Value<VS> &rest) {
     return this->bind([rest](const T &v) {
