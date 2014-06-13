@@ -3,7 +3,7 @@
 #include <sys/wait.h>
 
 #include "options_parser/options_parser.h"
-#include "clog/clog.hpp"
+// #include "clog/clog.hpp"
 
 using std::string;
 
