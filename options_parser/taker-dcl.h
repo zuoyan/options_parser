@@ -103,8 +103,6 @@ struct Taker {
 
   static Maybe<string> to_error(Nothing);
 
-  static Maybe<string> to_error(void_);
-
   template <class T>
   static Maybe<string> to_error(const Maybe<T> &v);
   template <class T>

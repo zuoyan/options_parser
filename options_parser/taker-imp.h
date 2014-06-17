@@ -14,8 +14,6 @@ OPTIONS_PARSER_IMP Taker::operator bool() const { return bool(take_); }
 
 OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(Nothing) { return nothing; }
 
-OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(void_) { return nothing; }
-
 OPTIONS_PARSER_IMP Maybe<string> Taker::to_error(int c) {
   if (c > 0) return nothing;
   return "error code: " + std::to_string(c);

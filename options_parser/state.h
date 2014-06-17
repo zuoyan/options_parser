@@ -88,10 +88,7 @@ struct state {
     return [func, tf](const S &s) {
       auto v_s = tf(s);
       auto r = options_parser::apply(func, v_s.first);
-      if (is_error(r)) {
-        return std::make_pair(r, s);
-      }
-      return std::make_pair(r, v_s.second);
+      return std::make_pair(r, is_error(r) ? s : v_s.second);
     };
   }
 

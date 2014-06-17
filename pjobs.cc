@@ -181,7 +181,8 @@ int main(int argc, char* argv[]) {
         .many(1)
         .bind([](std::vector<string> vs) {
           return options_parser::value().apply([vs](string ignore) {
-            return vs;
+            // TODO: clang++ return error here with 'return vs'
+            return std::vector<string>{vs};
           });
         });
   };

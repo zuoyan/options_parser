@@ -19,7 +19,8 @@
 
 namespace options_parser {
 
-struct Option {
+class Option {
+ public:
   Matcher match;
   Taker take;
   Document document;
@@ -44,7 +45,8 @@ struct Option {
   Option *append_value_document(T *ptr);
 };
 
-struct ParseResult {
+class ParseResult {
+ public:
   Situation situation;
   Maybe<string> error;
   Maybe<string> error_full;
@@ -52,7 +54,8 @@ struct ParseResult {
   bool check_print(bool all = true, int code = 1) const;
 };
 
-struct Parser {
+class Parser {
+ public:
   template <class Description, class Epilog>
   Parser(const Description &description, const Epilog &epilog);
 

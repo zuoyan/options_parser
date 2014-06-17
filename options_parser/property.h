@@ -9,10 +9,10 @@
 namespace options_parser {
 
 template <class T>
-struct property {
+class property {
   std::function<T(void)> func_;
   std::shared_ptr<T> value_;
-
+ public:
   property() = default;
 
   template <class U, typename std::enable_if<std::is_constructible<T, U>::value,

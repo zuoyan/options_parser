@@ -7,7 +7,8 @@
 
 namespace options_parser {
 
-struct Any {
+class Any {
+ public:
   Any() = default;
   Any(const Any&) = default;
 
@@ -50,6 +51,7 @@ struct Any {
     return "(nil)";
   }
 
+ private:
   struct Interface {
     virtual ~Interface() {}
     virtual Interface* clone() const = 0;

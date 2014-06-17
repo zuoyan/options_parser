@@ -23,16 +23,6 @@ void show_type(T _ = T()) {
 struct Nothing {};
 constexpr Nothing nothing{};
 
-struct void_ {
-  void_() = default;
-
-  void_(const void_ &) = default;
-
-  void_(Nothing) {}
-
-  operator Nothing() const { return nothing; }
-};
-
 template <class F>
 struct VoidWrap {
   F func;
@@ -41,7 +31,7 @@ struct VoidWrap {
   struct result_type_impl {
     typedef decltype(std::declval<F>()(std::declval<Args>()...)) origin_type;
     static constexpr bool origin_void = std::is_void<origin_type>::value;
-    typedef typename std::conditional<origin_void, void_, origin_type>::type
+    typedef typename std::conditional<origin_void, Nothing, origin_type>::type
         type;
   };
 
@@ -50,7 +40,7 @@ struct VoidWrap {
                           typename result_type_impl<Args &&...>::type>::type
   call(Args &&... args) const {
     func(std::forward<Args>(args)...);
-    return void_{};
+    return nothing;
   }
 
   template <class... Args>
@@ -93,7 +83,7 @@ auto apply(const F &f, const V &v)
     OPTIONS_PARSER_AUTO_RETURN(apply_impl<F, V>::apply(f, v));
 
 template <class T>
-struct Maybe;
+class Maybe;
 
 struct always_true {
   template <class... U>
@@ -108,9 +98,9 @@ Maybe<T> maybe(const T &v) {
 }
 
 template <class T>
-struct Maybe {
+class Maybe {
   std::shared_ptr<T> value_ptr;
-
+ public:
   explicit operator bool() const { return value_ptr.get(); }
 
   template <class U,
@@ -173,45 +163,6 @@ struct Error {
 
 inline Error<> error_message(const string &m) { return Error<>(m); }
 
-template <class Value, class Other = string>
-struct Either {
-  Maybe<Value> value;
-  Maybe<Other> other;
-
-  Either() = default;
-
-  Either(const Either &) = default;
-
-  Either(const Error<Other> &e) { other = e.message; }
-
-  template <class U,
-            typename std::enable_if<
-                std::is_constructible<Maybe<Value>, U>::value, int>::type = 0>
-  Either(const U &v)
-      : value(v) {}
-
-  template <class Func>
-  auto bind(Func &&func) const
-      -> Either<decltype(func(std::declval<Value>())), Other> {
-    if (other) return Error<Other>(*other.get());
-    if (value) return func(*this->value.get());
-    return Error<Other>();
-  }
-
-  template <class Func>
-  auto apply(Func &&func) const
-      -> Either<decltype(void_wrap(func)(std::declval<Value>())), Other> {
-    if (other) return Error<Other>(*other.get());
-    if (value) return void_wrap(func)(*this->value.get());
-    return Error<Other>();
-  }
-
-  template <class U>
-  static Either<U> wrap(const U &v) {
-    return Either<U>(v);
-  }
-};
-
 template <class T>
 inline bool is_error(const T &) {
   return false;
@@ -232,6 +183,7 @@ string get_error(const T &v) {
   return "";
 }
 
+
 template <class T>
 bool is_error(const Maybe<T> &v) {
   return !v;
@@ -248,6 +200,45 @@ string get_error(const Maybe<T> &v) {
   assert(!v);
   return string("empty");
 }
+
+template <class Value, class Other = string>
+struct Either {
+  Maybe<Value> value;
+  Maybe<Other> other;
+
+  Either() = default;
+
+  Either(const Either &) = default;
+
+  Either(const Error<Other> &e) { other = e.message; }
+
+  template <class U,
+            typename std::enable_if<
+                std::is_constructible<Maybe<Value>, U>::value, int>::type = 0>
+  Either(const U &v)
+      : value(v) {}
+
+  template <class Func>
+  auto bind(Func &&func) const
+      -> Either<decltype(func(std::declval<Value>())), Other> {
+    if (other) return error_message(*this->other.get());
+    if (value) return func(*this->value.get());
+    return error_message("not a value and not an other");
+  }
+
+  template <class Func>
+  auto apply(Func &&func) const
+      -> Either<decltype(void_wrap(func)(std::declval<Value>())), Other> {
+    if (other) return error_message(*this->other.get());
+    if (value) return void_wrap(func)(*this->value.get());
+    return error_message("not a value and not an other");
+  }
+
+  template <class U>
+  static Either<U> wrap(const U &v) {
+    return Either<U>(v);
+  }
+};
 
 template <class T>
 bool is_error(const Either<T> &ve) {

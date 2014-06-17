@@ -51,7 +51,10 @@ struct ValueRebind {
   template <class T, class S>
   struct rebind {
     static_assert(std::is_same<S, Situation>::value, "must be Situation");
-    typedef Value<decltype(get_value(std::declval<T>()))> type;
+    typedef typename std::remove_const<typename std::remove_reference<
+        decltype(get_value(std::declval<T>()))>::type>::type R;
+    static_assert(!std::is_const<R>::value, "should not be const");
+    typedef Value<R> type;
   };
 };
 
@@ -130,7 +133,7 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
     return func;
   }
 
-  Value<void_> ignore_value() const {
+  Value<Nothing> ignore_value() const {
     return this->apply([](const T &v) {});
   }
 
