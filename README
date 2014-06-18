@@ -240,16 +240,14 @@ std::string sub_command; // the active sub command
 // There may be conflictions between sub commands, we have to
 // add_parser dynamically
 app.add_option(
-    value().not_option().apply([&](std::string c) {
-      if (sub_command.size()) {  // only one sub command ...
-        return 0;
-      }
+    value().peek().apply([&](std::string c) {
       // return MATCH_EXACT if c is one of sub commands, otherwise return 0
     }),
     [&](std::string sub) {
       sub_command = cmd;
       // sub parser win when conflicting with app
       app.add_parser(sub_command_parsers[sub], 1);
+	  sub_command_parsers.clear(); // only one sub command
     },
     {"<sub command>", "sub command of git, .."});
 ```

@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
   std::map<std::string, options_parser::Parser> subs;
 
   app.add_option(
-      options_parser::value().peek().apply([&](std::string arg)->int {
+      options_parser::value().peek().apply([&](std::string arg) -> int {
         if (subs.count(arg)) {
           return options_parser::MATCH_EXACT;
         }
