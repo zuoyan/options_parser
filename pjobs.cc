@@ -1,3 +1,5 @@
+#include <mutex>
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -6,6 +8,28 @@
 // #include "clog/clog.hpp"
 
 using std::string;
+
+std::map<string, string> envs;
+std::set<string> clear_envs;
+
+// TODO: mutex with fork
+std::mutex stderr_mutex;
+void error_message(const string& m) {
+  std::lock_guard<std::mutex> lock(stderr_mutex);
+  std::cerr << m << std::endl;
+}
+
+template <class H, class... More>
+typename std::enable_if<!std::is_convertible<H, string>::value>::type
+error_message(const string& m, const H& h, const More&... more) {
+  error_message(m + std::to_string(h), more...);
+}
+
+template <class H, class... More>
+typename std::enable_if<std::is_convertible<H, string>::value>::type
+error_message(const string& m, const H& h, const More&... more) {
+  error_message(m + h, more...);
+}
 
 // for every k, v in dict, replace %{k} to v, concurrently.
 string replace_pattern(string s, const std::map<string, string>& dict) {
@@ -78,7 +102,7 @@ int run_prog_pattern(std::vector<string> prog, std::map<string, string>& dict,
                      bool dry_run) {
   int pid = dry_run ? 0 : fork();
   if (pid == -1) {
-    std::cerr << "fork failed:" << strerror(errno) << std::endl;
+    error_message("fork failed:", strerror(errno));
     exit(1);
   }
   if (pid == 0) {
@@ -87,17 +111,27 @@ int run_prog_pattern(std::vector<string> prog, std::map<string, string>& dict,
       a = replace_pattern(a, dict);
     }
     if (dry_run) {
-      std::cerr << options_parser::join(prog, " ", &quote_argument)
-                << std::endl;
+      error_message(options_parser::join(prog, " ", &quote_argument));
     } else {
       std::vector<const char*> prog_cargv;
       for (const auto& a : prog) {
         prog_cargv.push_back(a.c_str());
       }
       prog_cargv.push_back(nullptr);
+      for (const auto& n_v : envs) {
+        auto n = n_v.first;
+        auto v = replace_pattern(n_v.second, dict);
+        setenv(n.c_str(), v.c_str(), true);
+      }
+      for (const auto& n : clear_envs) {
+        int r = unsetenv(n.c_str());
+        if (r != 0) {
+          error_message("unset env ", n, " failed: ", strerror(errno));
+        }
+      }
       execvp(prog_cargv.front(), (char* const*)&prog_cargv[0]);
-      std::cerr << "execvp " << options_parser::join(prog, " ", quote_argument)
-                << " failed: " << strerror(errno) << std::endl;
+      error_message("execvp ", options_parser::join(prog, " ", quote_argument),
+                    " failed: ", strerror(errno));
       exit(127);
     }
   }
@@ -150,25 +184,46 @@ void run_prog_patterns(std::vector<ProgramPattern>& prog_patterns,
   }
 }
 
+std::map<char, char> sep_left_rights = {{'{', '}'}, {'[', ']'}, {'(', ')'}};
+
+string right_sep(string sep) {
+  if (sep.size() && sep_left_rights.count(sep.front())) {
+    sep = sep.substr(1) + sep_left_rights[sep.front()];
+  } else if (sep.size() && sep_left_rights.count(sep.back())) {
+    sep = sep_left_rights[sep.back()] + sep.substr(0, sep.size() - 1);
+  }
+  return sep;
+}
+
 int main(int argc, char* argv[]) {
   options_parser::Parser app(
       string() + "Usage: " + argv[0] +
           " [NAME=VALUE] [options]\n"
           "Run program pattern replaced by variables in parallel.\n",
       "\n"
+
       "Some built in variables:\n"
-      "\tJOB_INDEX: job index of the program, starts from zero.\n"
-      "\tJOB_SIZE: job size of this run\n"
-      "\tPID: child pid\n"
+      "  JOB_INDEX: job index of the program, starts from zero.\n"
+      "  JOB_SIZE: job size of this run\n"
+      "  PID: child pid\n"
       "\n"
+
+      "SEP:\n"
+      "  For options acceting lots of values, we have to use a separator to"
+      " mark the end. SEP can be any raw string. If the SEP starts/ends with "
+      "one of '{', '(', '[', we'll expect next sep will ends/starts with one of"
+      " '}', ')', ']' respectively.\n"
+      "\n"
+
       "Example:\n"
-      "\t # run echo 10 times\n"
-      "\t pjobs --prog -- echo 'pid=%{PID}' 'seq=%{SEQ}' -- \\\n"
-      "\t\t --values seq -- $(seq 10) --\n"
-      "\t # run wget in parallel\n"
-      "\t pjobs --parallel 100 --prog -- wget 'www.example.com/%{ID}' -- \\\n"
-      "\t\t --values ID -- $(seq 1000) --\n"
+      "  # run echo 10 times\n"
+      "  pjobs --prog --{ echo 'pid=%{PID}' 'seq=%{SEQ}' }-- --values seq -- "
+      "$(seq 10) --\n"
+      "  # run wget in parallel\n"
+      "  pjobs --parallel 100 --prog {-- wget 'www.example.com/%{ID}' --} "
+      "--values ID -- $(seq 1000) --\n"
       "\n"
+
       "Wrote by jiangzuoyan@gmail.com, use it at your own risk.");
 
   std::vector<ProgramPattern> prog_patterns;
@@ -177,7 +232,7 @@ int main(int argc, char* argv[]) {
 
   auto sep_values = [](string sep) {
     return options_parser::value()
-        .check([sep](string arg) { return arg != sep; })
+        .check([sep](string arg) { return arg != right_sep(sep); })
         .many(1)
         .bind([](std::vector<string> vs) {
           return options_parser::value().apply([vs](string ignore) {
@@ -221,8 +276,7 @@ int main(int argc, char* argv[]) {
     for (string kv : vs) {
       auto eq = kv.find('=');
       if (eq == string::npos) {
-        std::cerr << "fix me, internal error, --list-values without '='"
-                  << std::endl;
+        error_message("fix me, internal error, --list-values without '='");
         continue;
       }
       auto k = kv.substr(0, eq);
@@ -277,17 +331,17 @@ int main(int argc, char* argv[]) {
                  "add variable value lists");
   app.add_option("-p, --parallel NUM", &parallel_number,
                  "set number of process in once");
-  auto env_option = app.add_option(
-      "-e, --env NAME=VALUE", [](string nv) -> string {
-                                auto eq = nv.find('=');
-                                if (eq == string::npos) {
-                                  return "no '=' find";
-                                }
-                                nv[eq] = 0;
-                                setenv(nv.c_str(), nv.c_str() + eq + 1, true);
-                                return "";
-                              },
-      "set environment");
+  auto env_option = app.add_option("-e, --env NAME=VALUE",
+                                   [](string nv) -> string {
+                                     auto eq = nv.find('=');
+                                     if (eq == string::npos) {
+                                       return "no '=' find";
+                                     }
+                                     nv[eq] = 0;
+                                     envs[nv.c_str()] = nv.c_str() + eq + 1;
+                                     return "";
+                                   },
+                                   "set environment");
   app.add_option(
       options_parser::value().peek().apply([](string a) {
         return a.find('=') != string::npos && a.front() != '-'
@@ -298,15 +352,7 @@ int main(int argc, char* argv[]) {
       {"NAME=VALUE", "set environment, NAME should not start with '-'"});
   app.add_option("-i, --ignore-environment", []() { return !clearenv(); },
                  "start with an empty environment");
-  app.add_option("-u, --unset NAME",
-                 [](string n) -> string {
-                   int r = unsetenv(n.c_str());
-                   if (r != 0) {
-                     return "unset environment '" + n + "' failed:" +
-                            strerror(errno);
-                   }
-                   return "";
-                 },
+  app.add_option("-u, --unset NAME", [](string n) { clear_envs.insert(n); },
                  "remove variable from environment");
   app.parse(argc, argv).check_print();
 

@@ -25,10 +25,11 @@ inline std::vector<string> break_string(const string &text, size_t width,
       ret.push_back(indent_str + line);
       line.clear();
     }
-    if (line.size())
+    if (line.size()) {
       line += " " + token;
-    else
+    } else {
       line = token;
+    }
   }
   if (line.size()) ret.push_back(indent_str + line);
   return ret;
