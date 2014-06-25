@@ -30,6 +30,16 @@ TEST(Basic) {
   CHECK_EQ(md.is_arg_optional, false);
 }
 
+TEST(BasicSlash) {
+  MatchDescription md{"/f, /file FILE"};
+  CHECK_EQ(md.doc, "/f, /file FILE");
+  CHECK_EQ(md.name, "/file");
+  CHECK_EQ(test::Container<std::string>(md.opts),
+           test::Container<std::string>({"/f", "/file"}));
+  CHECK_EQ(md.num_args, 1);
+  CHECK_EQ(md.is_arg_optional, false);
+}
+
 TEST(BasicEqual) {
   MatchDescription md{"-f, --file=FILE"};
   CHECK_EQ(md.doc, "-f, --file=FILE");

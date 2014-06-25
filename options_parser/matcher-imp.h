@@ -34,14 +34,6 @@ OPTIONS_PARSER_IMP MatchDescription::MatchDescription(const string &d)
         continue;
       }
       if (s[off] == prefix.front()) {
-        if (off + 1 < s.size() && s[off + 1] != prefix.front()) {
-          ret.push_back(s.substr(off, 2));
-          off += 2;
-          if (off < s.size() && s[off] == '=') {
-            ++off;
-          }
-          continue;
-        }
         size_t n = off;
         while (n < s.size() && !isspace(s[n]) && !strchr("[]=,", s[n])) {
           ++n;
@@ -117,49 +109,55 @@ OPTIONS_PARSER_IMP Matcher::Matcher(const MatchDescription &md) {
       return mr;
     }
     string first_arg = get_value(first_value_s.first);
-    std::pair<Either<string>, Situation> m_s;
-    m_s = value()(s);
-    if (is_error(m_s.first)) {
+    if (static_cast<size_t>(s.position.off) >= first_arg.size() ||
+        !starts_with(first_arg, md.prefix)) {
       return mr;
     }
-    auto arg = get_value(m_s.first);
-    if (arg.empty()) {
-      return mr;
-    }
+    auto arg = first_arg.substr(s.position.off);
     if (arg.find('=') != string::npos) {
       auto p = arg.find('=');
-      auto l = arg.size() - p - 1;
-      m_s.second.position.index--;
-      m_s.second.position.off = first_arg.size() - l;
       arg = arg.substr(0, p);
-      m_s.first = arg;
-    }
-    mr.situation = m_s.second;
-    if (s.position.off == 0) {
-      for (const string &o : md.opts) {
-        if (arg == o) {
-          mr.priority = MATCH_EXACT;
-          return mr;
-        }
-      }
-      for (const string &o : md.opts) {
-        if (starts_with(o, arg)) {
-          mr.priority = MATCH_PREFIX;
-          return mr;
-        }
-      }
+      mr.situation.position.off += arg.size() + 1;
     } else {
-      for (const string &o : md.opts) {
-        if (arg == o.substr(md.prefix.size())) {
-          mr.priority = MATCH_EXACT;
-          return mr;
-        }
+      mr.situation.position.off = 0;
+      mr.situation.position.index++;
+    }
+    if (s.position.off > 0) {
+      arg += md.prefix;
+    }
+    for (const string &o : md.opts) {
+      if (arg == o) {
+        mr.priority = MATCH_EXACT;
+        return mr;
       }
-      for (const string &o : md.opts) {
-        if (starts_with(o.substr(md.prefix.size()), arg)) {
-          mr.priority = MATCH_EXACT;
-          return mr;
-        }
+    }
+    for (const string &o : md.opts) {
+      if (starts_with(o, arg)) {
+        mr.priority = MATCH_PREFIX;
+        return mr;
+      }
+    }
+    // check one
+    mr.situation.position = s.position;
+    if (s.position.off > 0) {
+      arg = md.prefix + first_arg.substr(s.position.off, 1);
+      mr.situation.position.off++;
+    } else {
+      arg = first_arg.substr(0, md.prefix.size() + 1);
+      mr.situation.position.off = md.prefix.size() + 1;
+    }
+    if (static_cast<size_t>(mr.situation.position.off) < first_arg.size() &&
+        first_arg[mr.situation.position.off] == '=') {
+      mr.situation.position.off++;
+    } else if (static_cast<size_t>(mr.situation.position.off) >=
+               first_arg.size()) {
+      mr.situation.position.off = 0;
+      mr.situation.position.index++;
+    }
+    for (const string &o : md.opts) {
+      if (arg == o) {
+        mr.priority = MATCH_EXACT;
+        return mr;
       }
     }
     mr.situation.position = s.position;

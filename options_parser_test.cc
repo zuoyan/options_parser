@@ -63,6 +63,18 @@ TEST(Basic) {
   CHECK_EQ(vs, "prefix string");
 }
 
+TEST(ShortCompact) {
+  options_parser::Parser parser;
+  int a = 0, b = 0, c = 0;
+  parser.add_option("-a, --inc-a", [&]() { ++a; }, "inc a");
+  parser.add_option("-b, --inc-b", [&]() { ++b; }, "inc b");
+  parser.add_option("-c, --inc-c", [&]() { ++c; }, "inc c");
+  CHECK_PARSE(parser, "-abc --inc-a -c --inc-a", "", 4, 0);
+  CHECK_EQ(a, 3);
+  CHECK_EQ(b, 1);
+  CHECK_EQ(c, 2);
+}
+
 TEST(Function) {
   options_parser::Parser parser;
   double va;
