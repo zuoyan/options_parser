@@ -288,7 +288,7 @@ class Parser {
   std::shared_ptr<Holder> holder_;
 };
 
-Value<std::string> config_file();
+Value<string> config_file(const string &filename);
 
 // A default global parser, to hold options across libraries/objects.
 Parser &parser();

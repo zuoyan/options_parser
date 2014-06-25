@@ -20,15 +20,18 @@ int main(int argc, char* argv[]) {
         vd = d;
       },
       "call the function over arguments, assign vi, vs, and vd at once.");
-  app.add_option("--config-file FILE",
-                 options_parser::config_file().ignore_value(),
-                 "load config file, which just contains command arguments");
+  app.add_option(
+      "--config-file FILE",
+      options_parser::value().bind(&options_parser::config_file).ignore_value(),
+      "load config file, which just contains command arguments");
 
-  app.add_option("--verbose-config-file FILE",
-                 options_parser::config_file().apply([&](std::string filename) {
-                   std::cerr << "loaded config file " << filename << std::endl;
-                 }),
-                 "load config file and print");
+  app.add_option(
+      "--verbose-config-file FILE",
+      options_parser::value().bind(&options_parser::config_file).apply([&](
+          std::string filename) {
+        std::cerr << "loaded config file " << filename << std::endl;
+      }),
+      "load config file and print");
   app.parse(argc, argv).check_print();  // if has a error, print and exit
 
   std::cerr << "vi " << vi << std::endl;

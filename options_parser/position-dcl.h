@@ -143,6 +143,12 @@ struct Value : state<Either<T>, Situation, ValueRebind> {
                            }).ignore_error();
   }
 
+  Value optional(const T &dft) const {
+    return optional().apply([dft](const Maybe<T> v) {
+        return v ? get_value(v) : dft;
+      });
+  }
+
   Value<std::vector<T>> many(size_t min = 0, size_t max = -1) const {
     auto tf = this->func_;
     auto func = [ tf, min, max ](const Situation &s)

@@ -49,12 +49,13 @@ struct Taker {
     take_ = [ptr](const MatchResult &mr) {
       TakeResult tr;
       tr.situation = mr.situation;
-      auto v_s = value()(mr.situation);
+      typedef typename std::remove_const<typename std::remove_reference<
+          decltype(get_value(*ptr))>::type>::type value_type;
+      auto v_s = value<value_type>()(mr.situation);
       if (is_error(v_s.first)) {
         tr.error = get_error(v_s.first);
-      }
-      if (!tr.error) {
-        tr.error = from_str(get_value(v_s.first), ptr);
+      } else {
+        *ptr = get_value(v_s.first);
       }
       if (!tr.error) {
         tr.situation = v_s.second;

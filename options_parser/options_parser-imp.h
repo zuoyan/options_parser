@@ -215,27 +215,22 @@ Parser::parse_lines(const std::vector<string> &lines, Situation s) {
                      s);
 }
 
-OPTIONS_PARSER_IMP Value<std::string> config_file() {
-  return value().bind([](string filename) {
-    return [filename](Situation s) -> std::pair<Either<string>, Situation> {
-      auto cli = s.parser;
-      assert(cli);
-      auto pr = cli->parse_file(filename, s);
-      string error;
-      if (pr.error) {
-        error = get_value(pr.error);
-        if (pr.error_full) {
-          error = get_value(pr.error_full);
-        }
-      }
-      if (error.size()) {
-        return std::make_pair(error_message("when parsing config file '" +
-                                            filename + "':" + error),
-                              s);
-      }
-      return std::make_pair(filename, s);
-    };
-  });
+OPTIONS_PARSER_IMP Value<string> config_file(const string &filename) {
+  return [filename](Situation s) -> std::pair<Either<string>, Situation> {
+    auto cli = s.parser;
+    assert(cli);
+    auto pr = cli->parse_file(filename, s);
+    string error;
+    if (pr.error) {
+      error = get_value(pr.error_full ? pr.error_full : pr.error);
+    }
+    if (error.size()) {
+      return std::make_pair(
+          error_message("when parsing config file '" + filename + "':" + error),
+          s);
+    }
+    return std::make_pair(filename, s);
+  };
 }
 
 OPTIONS_PARSER_IMP ParseResult

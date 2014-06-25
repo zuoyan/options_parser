@@ -12,7 +12,9 @@ namespace options_parser {
 
 template <class T>
 Option *Option::append_value_document(T *ptr) {
-  return append_document([ptr]() { return "Value: " + to_str(*ptr); });
+  return append_document([ptr]() {
+    return "Value: " + to_str(get_value(*ptr));
+  });
 }
 
 template <class Description, class Epilog>
